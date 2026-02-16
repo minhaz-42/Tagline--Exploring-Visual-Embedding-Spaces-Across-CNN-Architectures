@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Django
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Sensitive / env
+.env
+.env.*
+
+# Dataset / embeddings / large outputs
+dataset/
+embeddings/
+retrieval/static/tsne_plots/
+retrieval/static/uploads/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Tests / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Node
+node_modules/

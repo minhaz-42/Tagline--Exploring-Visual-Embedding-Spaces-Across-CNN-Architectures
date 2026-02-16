@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tagline — Exploring Visual Embedding Spaces Across CNN Architectures{% endblock %}
+
+{% block main_class %}landing-page{% endblock %}
+
+{% block hero %}
+<section class="landing-hero">
+    <div class="landing-container">
+        <div class="landing-text">
+            <div class="landing-badge">
+                <span>🔬</span> Research Project
+            </div>
+            <h1 class="landing-title">
+                Exploring <span class="highlight">Visual Embedding</span> Spaces Across CNN Architectures
+            </h1>
+            <p class="landing-desc">
+                A comparative analysis of feature representations from ResNet-101, ZFNet, and GoogLeNet. 
+                Upload any image and retrieve the most visually similar results using cosine similarity 
+                across high-dimensional embedding spaces.
+            </p>
+            <div class="landing-actions">
+                <a href="{% url 'search_page' %}" class="btn btn-primary btn-lg">
+                    <span class="btn-icon">🔍</span> Start Searching
+                </a>
+                <a href="{% url 'metrics' %}" class="btn btn-secondary btn-lg">
+                    <span class="btn-icon">📊</span> View Metrics
+                </a>
+            </div>
+        </div>
+        <div class="landing-visual">
+            <div class="visual-card-stack">
+                <!-- ResNet Card -->
+                <div class="visual-card">
+                    <div class="vc-header">
+                        <div class="vc-dot" style="background:#6366f1"></div>
+                        <span class="vc-label">ResNet-101 · 2048-d</span>
+                    </div>
+                    <div class="vc-bars">
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:99%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:97%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:92%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:88%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                    </div>
+                </div>
+                <!-- ZFNet Card -->
+                <div class="visual-card">
+                    <div class="vc-header">
+                        <div class="vc-dot" style="background:#f59e0b"></div>
+                        <span class="vc-label">ZFNet · 4096-d</span>
+                    </div>
+                    <div class="vc-bars">
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:95%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:86%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:78%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:84%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+                    </div>
+                </div>
+                <!-- GoogLeNet Card -->
+                <div class="visual-card">
+                    <div class="vc-header">
+                        <div class="vc-dot" style="background:#10b981"></div>
+                        <span class="vc-label">GoogLeNet · 1024-d</span>
+                    </div>
+                    <div class="vc-bars">
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:98%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:93%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:87%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill" style="width:90%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<!-- Features Section -->
+<section class="features-section">
+    <div class="features-header">
+        <h2>How It Works</h2>
+        <p>Three CNN architectures, one unified comparison framework</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon icon-blue">📤</div>
+            <h3>Upload Query Image</h3>
+            <p>Select any image from the 8 Caltech-101 categories. The system accepts JPG, PNG, and BMP formats up to 10MB.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon icon-purple">🧠</div>
+            <h3>Choose CNN Model</h3>
+            <p>Pick from ResNet-101 (2048-d), ZFNet (4096-d), or GoogLeNet (1024-d) to extract deep feature embeddings.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon icon-green">🔍</div>
+            <h3>Retrieve Similar Images</h3>
+            <p>Cosine similarity finds the top-10 nearest neighbours in the embedding space from 1,148 pre-indexed images.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon icon-orange">📊</div>
+            <h3>Compare & Visualize</h3>
+            <p>Evaluate retrieval quality with Top-10 accuracy, mAP, and interactive t-SNE embedding visualizations.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Models Overview -->
+<section class="container" style="padding:60px 24px">
+    <div class="features-header">
+        <h2>CNN Architectures Compared</h2>
+        <p>Pre-trained on ImageNet, evaluated on Caltech-101</p>
+    </div>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>ResNet-101</h3>
+            <div class="info-dim">2048-d</div>
+            <p>Deep residual network with 101 layers and skip connections. Features extracted from global average pooling achieve state-of-the-art retrieval performance.</p>
+        </div>
+        <div class="info-card">
+            <h3>ZFNet</h3>
+            <div class="info-dim">4096-d</div>
+            <p>Zeiler & Fergus network with deconvolution-based visualization. High-dimensional 4096-d embeddings from the FC-7 layer capture rich semantic information.</p>
+        </div>
+        <div class="info-card">
+            <h3>GoogLeNet</h3>
+            <div class="info-dim">1024-d</div>
+            <p>Inception v1 architecture with parallel multi-scale convolutions. The most compact 1024-d embedding balances efficiency with strong retrieval quality.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

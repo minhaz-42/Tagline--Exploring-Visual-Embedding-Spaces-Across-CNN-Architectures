@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Search History — Tagline{% endblock %}
+{% block nav_history %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Search History</h1>
+    <p class="page-subtitle">Your past image retrieval queries and results</p>
+</header>
+
+{% if searches %}
+<div class="history-list">
+    {% for item in searches %}
+    <div class="history-item">
+        {% if item.query_image_url %}
+        <img src="{% static item.query_image_url %}" alt="Query" class="history-thumb">
+        {% else %}
+        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--text-muted)">🖼️</div>
+        {% endif %}
+        <div class="history-details">
+            <h4>{{ item.model_display }}</h4>
+            <p>
+                Top result: <strong>{{ item.top_result_class|default:"—" }}</strong>
+                · {{ item.result_count }} results returned
+                · Similarity: {{ item.top_similarity|default:"—" }}
+            </p>
+        </div>
+        <div class="history-time">
+            {{ item.created_at|timesince }} ago
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="actions">
+    <a href="{% url 'search_page' %}" class="btn btn-primary">🔍 New Search</a>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <h3>No searches yet</h3>
+    <p>Start by uploading an image to find visually similar results across CNN embedding spaces.</p>
+    <a href="{% url 'search_page' %}" class="btn btn-primary btn-lg">Start Searching</a>
+</div>
+{% endif %}
+{% endblock %}

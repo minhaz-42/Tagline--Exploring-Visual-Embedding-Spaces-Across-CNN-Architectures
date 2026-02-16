@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Search — Visual Embedding Explorer{% endblock %}
+{% block nav_search %}active{% endblock %}
+
+{% block hero %}
+<header class="hero">
+    <div class="container hero-content">
+        <div class="hero-badge">CNN Feature Retrieval</div>
+        <h1 class="hero-title">Visual Embedding Explorer</h1>
+        <p class="hero-subtitle">
+            Upload a query image and retrieve the 10 most similar images by cosine similarity
+        </p>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-error">
+    <span><strong>Error:</strong> {{ error }}</span>
+    <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+</div>
+{% endif %}
+
+<section class="upload-section">
+    <h2 class="section-title">Query Image Retrieval</h2>
+    <p class="section-subtitle">Select a CNN model and upload an image to find visually similar results</p>
+
+    <form method="POST" action="{% url 'search' %}" enctype="multipart/form-data" class="upload-form" id="upload-form">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <!-- Image Upload -->
+            <div class="form-group">
+                <label for="query_image" class="form-label">Upload Image</label>
+                <div class="file-upload-area" id="drop-area">
+                    <input type="file" name="query_image" id="query_image"
+                           accept="image/*" required class="file-input">
+                    <div class="upload-placeholder" id="upload-placeholder">
+                        <div class="upload-icon">📁</div>
+                        <p>Drag & drop or <span class="upload-link">browse</span></p>
+                        <small>JPG, PNG, BMP — max 10 MB</small>
+                    </div>
+                    <div class="preview-container" id="preview-container" style="display:none;">
+                        <img id="preview-image" class="preview-image" alt="Preview">
+                        <button type="button" class="remove-btn" id="remove-btn">&times;</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Selection -->
+            <div class="form-group">
+                <label class="form-label">Select CNN Model</label>
+                <div class="model-cards">
+                    {% for key, name in models_available.items %}
+                    <label class="model-card" for="model_{{ key }}">
+                        <input type="radio" name="model_key" id="model_{{ key }}"
+                               value="{{ key }}" {% if forloop.first %}checked{% endif %}>
+                        <div class="card-content">
+                            <span class="card-name">{{ name }}</span>
+                            {% if key == "resnet" %}
+                            <span class="card-detail">Deep residual learning · 101 layers</span>
+                            {% elif key == "zfnet" %}
+                            <span class="card-detail">Deconvolution visualisation · FC-7</span>
+                            {% elif key == "googlenet" %}
+                            <span class="card-detail">Inception architecture · multi-scale</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
+            <span class="btn-text">🔍 Search Similar Images</span>
+            <span class="btn-loading" style="display:none;">⏳ Processing…</span>
+        </button>
+    </form>
+</section>
+
+<!-- Info Cards -->
+<section class="info-section">
+    <h2 class="section-title">About the Models</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>ResNet-101</h3>
+            <div class="info-dim">2048-d</div>
+            <p>Very deep residual network with 101 layers. Skip connections enable training of extremely deep architectures. Features from global average pooling.</p>
+        </div>
+        <div class="info-card">
+            <h3>ZFNet</h3>
+            <div class="info-dim">4096-d</div>
+            <p>Zeiler & Fergus network uses deconvolution-based visualization. 4096-d features from FC-7 layer capture high-level semantic information.</p>
+        </div>
+        <div class="info-card">
+            <h3>GoogLeNet</h3>
+            <div class="info-dim">1024-d</div>
+            <p>Inception v1 with parallel convolution filters at multiple scales. Compact 1024-d embedding from global average pooling over inception modules.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const fileInput = document.getElementById('query_image');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const placeholder = document.getElementById('upload-placeholder');
+    const removeBtn = document.getElementById('remove-btn');
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                previewImage.src = ev.target.result;
+                previewContainer.style.display = 'block';
+                placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        previewContainer.style.display = 'none';
+        placeholder.style.display = 'flex';
+    });
+
+    const dropArea = document.getElementById('drop-area');
+    ['dragenter','dragover'].forEach(e => dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.add('drag-over'); }));
+    ['dragleave','drop'].forEach(e => dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.remove('drag-over'); }));
+    dropArea.addEventListener('drop', e => { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); });
+
+    document.getElementById('upload-form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        btn.querySelector('.btn-text').style.display = 'none';
+        btn.querySelector('.btn-loading').style.display = 'inline';
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

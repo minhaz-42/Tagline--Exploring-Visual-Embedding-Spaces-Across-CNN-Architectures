@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Evaluation Metrics — Model Comparison{% endblock %}
+{% block nav_metrics %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Evaluation Metrics</h1>
+    <p class="page-subtitle">
+        Quantitative comparison of embedding quality across
+        ResNet-101, ZFNet, and GoogLeNet on 8 Caltech-101 classes
+        ({{ total_images }} images, leave-one-out evaluation).
+    </p>
+</header>
+
+<!-- Metrics Table -->
+<section class="metrics-section">
+    <h2 class="section-title">Retrieval Performance</h2>
+    <p class="section-subtitle">Top-10 retrieval accuracy and Mean Average Precision computed via leave-one-out cosine similarity</p>
+
+    <div class="table-wrapper">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Embedding Dim</th>
+                    <th>Top-10 Accuracy</th>
+                    <th>Top-10 Accuracy %</th>
+                    <th>Mean Average Precision (mAP)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td class="model-cell">
+                        <strong>{{ row.model_name }}</strong>
+                    </td>
+                    <td>
+                        <span class="dim-badge">{{ row.embedding_dim }}-d</span>
+                    </td>
+                    <td>
+                        {% if row.top_k_accuracy != "N/A" %}
+                            <div class="metric-bar">
+                                <span class="metric-value">{{ row.top_k_accuracy_fmt }}</span>
+                                <div class="metric-bar-track">
+                                    <div class="metric-bar-fill" style="width:{{ row.top_k_pct }}%"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="metric-na">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.top_k_accuracy != "N/A" %}
+                            <span class="metric-value">{{ row.top_k_pct }}%</span>
+                        {% else %}
+                            <span class="metric-na">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.mAP != "N/A" %}
+                            <div class="metric-bar">
+                                <span class="metric-value">{{ row.mAP_fmt }}</span>
+                                <div class="metric-bar-track">
+                                    <div class="metric-bar-fill" style="width:{{ row.mAP_pct }}%"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="metric-na">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not rows %}
+    <div class="alert alert-info">
+        <span><strong>Note:</strong> Run the offline extraction pipeline first to generate evaluation metrics:
+        <code>python run_pipeline.py --dataset_dir ./dataset</code></span>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Methodology Note -->
+<section class="metrics-section">
+    <h2 class="section-title">Methodology</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>Top-K Accuracy</h3>
+            <div class="info-dim">Precision@10</div>
+            <p>For each image in the dataset, we treat it as a query (leave-one-out) and retrieve the 10 
+            nearest neighbours by cosine similarity. Top-K accuracy measures the fraction of retrieved 
+            items sharing the query's class label, averaged over all {{ total_images }} queries.</p>
+        </div>
+        <div class="info-card">
+            <h3>Mean Average Precision</h3>
+            <div class="info-dim">mAP</div>
+            <p>For each query, we compute Average Precision across the full ranked retrieval list, 
+            then average over all queries. mAP captures both precision and recall across all 
+            rank positions, providing a comprehensive retrieval quality measure.</p>
+        </div>
+        <div class="info-card">
+            <h3>Dataset</h3>
+            <div class="info-dim">8 Classes</div>
+            <p>Evaluated on {{ total_images }} images from 8 Caltech-101 categories: 
+            accordion, airplane, camera, elephant, laptop, motorbike, watch, and wheelchair. 
+            All models use ImageNet pre-trained weights.</p>
+        </div>
+    </div>
+</section>
+
+<!-- t-SNE Visualizations -->
+<section class="tsne-section">
+    <h2 class="section-title">t-SNE Embedding Visualizations</h2>
+    <p class="section-description">
+        2-D t-SNE projections of the feature embedding spaces.
+        Each colour represents one of the 8 selected Caltech-101 classes.
+    </p>
+
+    {% if tsne_plots %}
+    <div class="tsne-grid">
+        {% for key, plot_url in tsne_plots.items %}
+        <div class="tsne-card">
+            <h3 class="tsne-model-name">
+                {% if key == "resnet" %}ResNet-101 (2048-d)
+                {% elif key == "zfnet" %}ZFNet (4096-d)
+                {% elif key == "googlenet" %}GoogLeNet / Inception v1 (1024-d)
+                {% endif %}
+            </h3>
+            <img src="{% static plot_url %}" alt="t-SNE for {{ key }}" class="tsne-image">
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <span><strong>Note:</strong> t-SNE plots have not been generated yet.
+        Run: <code>python run_pipeline.py --dataset_dir ./dataset</code></span>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Back -->
+<div class="actions">
+    <a href="{% url 'search_page' %}" class="btn btn-secondary">← Back to Search</a>
+</div>
+{% endblock %}

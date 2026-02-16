@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% load retrieval_tags %}
+
+{% block title %}Results — {{ model_name }}{% endblock %}
+{% block nav_search %}active{% endblock %}
+
+{% block content %}
+<!-- Query Info Banner -->
+<section class="results-header">
+    <h1 class="page-title">Retrieval Results</h1>
+    <div class="result-meta">
+        <span class="meta-badge model-badge">{{ model_name }}</span>
+        <span class="meta-badge">Top-10 by Cosine Similarity</span>
+    </div>
+</section>
+
+<!-- Query Image -->
+<section class="query-section">
+    <h2 class="section-title">Query Image</h2>
+    <div class="query-card">
+        <img src="{% static query_image_url %}" alt="Query image" class="query-image">
+    </div>
+</section>
+
+<!-- Retrieved Images Grid -->
+<section class="results-section">
+    <h2 class="section-title">Top-10 Retrieved Images</h2>
+    <div class="results-grid">
+        {% for r in results %}
+        <div class="result-card">
+            <div class="result-rank">#{{ r.rank }}</div>
+            <div class="result-image-wrapper">
+                <img src="{% dataset_image r.image_path %}"
+                     alt="{{ r.class_name }}"
+                     class="result-image"
+                     loading="lazy">
+            </div>
+            <div class="result-info">
+                <span class="result-class">{{ r.class_name }}</span>
+                <span class="result-similarity" title="Cosine similarity">
+                    {{ r.similarity }}
+                </span>
+            </div>
+        </div>
+        {% empty %}
+        <p class="no-results">No results found. Make sure embeddings have been generated.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Actions -->
+<div class="actions">
+    <a href="{% url 'search_page' %}" class="btn btn-secondary">← New Search</a>
+    <a href="{% url 'metrics' %}" class="btn btn-outline">📊 View Metrics</a>
+</div>
+{% endblock %}

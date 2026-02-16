@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tagline — Visual Embedding Explorer{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'landing' %}" class="nav-brand">
+                <div class="brand-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+                        <path d="M8 16L14 10L20 16L14 22Z" fill="white" opacity="0.9"/>
+                        <path d="M14 16L20 10L26 16L20 22Z" fill="white" opacity="0.6"/>
+                    </svg>
+                </div>
+                <span class="brand-text">Tagline</span>
+            </a>
+            <div class="nav-links">
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="nav-link {% block nav_dashboard %}{% endblock %}">Dashboard</a>
+                {% endif %}
+                <a href="{% url 'search_page' %}" class="nav-link {% block nav_search %}{% endblock %}">Search</a>
+                <a href="{% url 'metrics' %}" class="nav-link {% block nav_metrics %}{% endblock %}">Metrics</a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'history' %}" class="nav-link {% block nav_history %}{% endblock %}">History</a>
+                <div class="nav-user">
+                    <span class="user-avatar">{{ user.username|make_list|first|upper }}</span>
+                    <a href="{% url 'user_logout' %}" class="nav-link nav-logout">Logout</a>
+                </div>
+                {% else %}
+                <a href="{% url 'user_login' %}" class="nav-link btn-nav-login">Login</a>
+                {% endif %}
+            </div>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    {% block hero %}{% endblock %}
+
+    <main class="{% block main_class %}container main-content{% endblock %}">
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+                <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <strong>Tagline</strong> — Exploring Visual Embedding Spaces Across CNN Architectures
+            </div>
+            <div class="footer-meta">
+                <span>Caltech-101</span>
+                <span class="footer-dot">·</span>
+                <span>8 Classes</span>
+                <span class="footer-dot">·</span>
+                <span>PyTorch + Django</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile nav toggle
+        document.getElementById('navToggle')?.addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('nav-open');
+            this.classList.toggle('active');
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

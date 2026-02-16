@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard — Tagline{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-greeting">Welcome back, {{ user.username }}!</h1>
+    <p class="dashboard-subtext">Here's an overview of your activity and the system status.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">🔍</div>
+        <div class="stat-value">{{ total_searches }}</div>
+        <div class="stat-label">Your Searches</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🧠</div>
+        <div class="stat-value">3</div>
+        <div class="stat-label">CNN Models</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🖼️</div>
+        <div class="stat-value">{{ total_images }}</div>
+        <div class="stat-label">Indexed Images</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📂</div>
+        <div class="stat-value">8</div>
+        <div class="stat-label">Classes</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-section">
+    <h2>Quick Actions</h2>
+    <div class="quick-actions">
+        <a href="{% url 'search_page' %}" class="quick-action">
+            <div class="quick-action-icon qa-search">🔍</div>
+            <div class="quick-action-text">
+                <h4>New Search</h4>
+                <p>Upload an image and find similar results</p>
+            </div>
+        </a>
+        <a href="{% url 'metrics' %}" class="quick-action">
+            <div class="quick-action-icon qa-metrics">📊</div>
+            <div class="quick-action-text">
+                <h4>View Metrics</h4>
+                <p>Compare model performance and t-SNE plots</p>
+            </div>
+        </a>
+        <a href="{% url 'history' %}" class="quick-action">
+            <div class="quick-action-icon qa-history">📋</div>
+            <div class="quick-action-text">
+                <h4>Search History</h4>
+                <p>Review your past queries and results</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Searches -->
+{% if recent_searches %}
+<div class="dashboard-section">
+    <h2>Recent Searches</h2>
+    <div class="history-list">
+        {% for item in recent_searches %}
+        <div class="history-item">
+            {% if item.query_image %}
+            <img src="{% static item.query_image_url %}" alt="Query" class="history-thumb">
+            {% else %}
+            <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🖼️</div>
+            {% endif %}
+            <div class="history-details">
+                <h4>{{ item.model_display }}</h4>
+                <p>Top result: {{ item.top_result_class|default:"—" }} · {{ item.result_count }} results</p>
+            </div>
+            <div class="history-time">
+                {{ item.created_at|timesince }} ago
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Model Performance Summary -->
+<div class="dashboard-section">
+    <h2>Model Performance Summary</h2>
+    <div class="info-grid">
+        {% for row in model_stats %}
+        <div class="info-card">
+            <h3>{{ row.model_name }}</h3>
+            <div class="info-dim">{{ row.embedding_dim }}-d</div>
+            <p>
+                <strong>Top-10 Accuracy:</strong> {{ row.top_k_accuracy_fmt }}<br>
+                <strong>mAP:</strong> {{ row.mAP_fmt }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

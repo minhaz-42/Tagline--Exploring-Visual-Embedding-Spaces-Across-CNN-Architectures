@@ -360,9 +360,11 @@ def metrics(request):
     for key in ("resnet", "zfnet", "googlenet"):
         plot_file = settings.TSNE_PLOTS_DIR / f"tsne_{key}.png"
         if plot_file.exists():
+            mtime = plot_file.stat().st_mtime
             tsne_plots[key] = {
                 "url": f"tsne_plots/tsne_{key}.png",
-                "updated_at": datetime.fromtimestamp(plot_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
+                "updated_at": datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M"),
+                "version": str(int(mtime)),
             }
 
     # Retrieve last query metrics from session (dynamic per-query)

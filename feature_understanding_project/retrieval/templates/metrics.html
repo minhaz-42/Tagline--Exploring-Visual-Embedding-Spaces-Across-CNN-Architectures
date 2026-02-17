@@ -227,7 +227,7 @@
                 {% endif %}
             </h3>
             <div class="info-dim" style="margin-bottom:0.5rem;">Last updated: {{ plot.updated_at }}</div>
-            <img src="{% static plot.url %}" alt="t-SNE for {{ key }}" class="tsne-image">
+            <img src="{% static plot.url %}?v={{ plot.version }}" alt="t-SNE for {{ key }}" class="tsne-image">
         </div>
         {% endfor %}
     </div>

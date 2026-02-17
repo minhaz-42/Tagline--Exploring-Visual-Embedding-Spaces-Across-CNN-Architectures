@@ -21,13 +21,18 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from collections import Counter
+from datetime import datetime
 from pathlib import Path
+
+import numpy as np
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.core.files.storage import default_storage
 
@@ -85,6 +90,59 @@ def _count_dataset_images():
     return count
 
 
+def _compute_query_metrics(results, class_names):
+    """
+    Compute per-query retrieval metrics from the top-K results.
+
+    Returns a dict with:
+      - top1_similarity, avg_similarity, min_similarity
+      - predicted_class, predicted_class_count
+      - class_consistency (fraction of top-K agreeing on predicted class)
+      - class_distribution: list of {class_name, count, pct}
+      - confidence_level: 'high', 'medium', or 'low'
+    """
+    if not results:
+        return {}
+
+    similarities = [r["similarity"] for r in results]
+    top1_sim = similarities[0]
+    avg_sim = sum(similarities) / len(similarities)
+    min_sim = min(similarities)
+
+    # Class distribution
+    class_counts = Counter(r["class_name"] for r in results)
+    predicted_class, pred_count = class_counts.most_common(1)[0]
+    consistency = pred_count / len(results)
+
+    class_dist = []
+    for cls_name, cnt in class_counts.most_common():
+        class_dist.append({
+            "class_name": cls_name,
+            "count": cnt,
+            "pct": round(cnt / len(results) * 100, 1),
+        })
+
+    # Confidence level based on consistency + similarity
+    if consistency >= 0.7 and avg_sim >= 0.5:
+        confidence = "high"
+    elif consistency >= 0.4 or avg_sim >= 0.3:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    return {
+        "top1_similarity": round(top1_sim, 4),
+        "avg_similarity": round(avg_sim, 4),
+        "min_similarity": round(min_sim, 4),
+        "predicted_class": predicted_class,
+        "predicted_class_count": pred_count,
+        "class_consistency": round(consistency * 100, 1),
+        "class_distribution": class_dist,
+        "confidence_level": confidence,
+        "total_results": len(results),
+    }
+
+
 # ══════════════════════════════════════════════
 # Landing
 # ══════════════════════════════════════════════
@@ -92,6 +150,24 @@ def _count_dataset_images():
 def landing(request):
     """Project landing page."""
     return render(request, "landing.html")
+
+
+# ══════════════════════════════════════════════
+# Favicon (prevent 404)
+# ══════════════════════════════════════════════
+
+def favicon(request):
+    """Return an empty favicon to suppress 404 errors."""
+    return HttpResponse(
+        (
+            b'\x00\x00\x01\x00\x01\x00\x01\x01\x00\x00\x01\x00\x18\x00'
+            b'0\x00\x00\x00\x16\x00\x00\x00(\x00\x00\x00\x01\x00\x00\x00'
+            b'\x02\x00\x00\x00\x01\x00\x18\x00\x00\x00\x00\x00\x04\x00'
+            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x00\x00cp\xf1\x00\x00\x00\x00\x00'
+        ),
+        content_type="image/x-icon",
+    )
 
 
 # ══════════════════════════════════════════════
@@ -114,8 +190,9 @@ def search(request):
     2. Load the chosen model and extract the query embedding.
     3. Load the pre-computed database embeddings.
     4. Build a nearest-neighbour index and retrieve the top-10 results.
-    5. Save to history if user is authenticated.
-    6. Render the results page.
+    5. Compute per-query retrieval metrics.
+    6. Save to history if user is authenticated.
+    7. Render the results page with metrics.
     """
     if request.method != "POST":
         return redirect("search_page")
@@ -173,7 +250,10 @@ def search(request):
     # ── 4. Extract query embedding ──
     try:
         from .feature_pipeline.feature_extractor import get_model, extract_single_embedding
-        from .feature_pipeline.nearest_neighbors import load_embeddings, build_index, query_index
+        from .feature_pipeline.nearest_neighbors import (
+            load_embeddings, build_index, query_index,
+            compute_cosine_similarities,
+        )
     except Exception as exc:
         _cleanup(save_path)
         return render(request, "index.html", {
@@ -208,18 +288,38 @@ def search(request):
         r["class_name"] = class_names[r["label"]]
         r["image_path"] = r["path"]
 
-    # ── 7. Save to history ──
+    # ── 7. Compute per-query metrics ──
+    query_metrics = _compute_query_metrics(results, class_names)
+
+    # Compute full cosine similarities for histogram-like stats
+    all_sims = compute_cosine_similarities(query_embedding, db_embeddings)
+    query_metrics["db_mean_similarity"] = round(float(np.mean(all_sims)), 4)
+    query_metrics["db_max_similarity"] = round(float(np.max(all_sims)), 4)
+    query_metrics["db_std_similarity"] = round(float(np.std(all_sims)), 4)
+
+    # ── 8. Save to history (with full results for revisiting) ──
     history_kwargs = {
         "model_key": model_key,
         "query_image_filename": filename,
         "result_count": len(results),
+        "results_json": json.dumps(results),
+        "query_metrics_json": json.dumps(query_metrics),
     }
     if results:
         history_kwargs["top_result_class"] = results[0].get("class_name", "")
         history_kwargs["top_similarity"] = results[0].get("similarity", 0)
     if request.user.is_authenticated:
         history_kwargs["user"] = request.user
-    SearchHistory.objects.create(**history_kwargs)
+    search_record = SearchHistory.objects.create(**history_kwargs)
+
+    # Store query metrics in session for the metrics page
+    request.session["last_query_metrics"] = {
+        "model_key": model_key,
+        "model_name": settings.MODEL_CONFIGS[model_key]["name"],
+        "embedding_dim": settings.MODEL_CONFIGS[model_key]["embedding_dim"],
+        "query_image_url": f"uploads/{filename}",
+        **query_metrics,
+    }
 
     # Model display name
     model_display = settings.MODEL_CONFIGS[model_key]["name"]
@@ -231,6 +331,8 @@ def search(request):
         "model_name": model_display,
         "results": results,
         "class_names": class_names,
+        "query_metrics": query_metrics,
+        "search_id": search_record.pk,
     }
     return render(request, "results.html", context)
 
@@ -248,22 +350,31 @@ def _cleanup(path):
 # ══════════════════════════════════════════════
 
 def metrics(request):
-    """Display the evaluation metrics table and t-SNE plots."""
+    """Display the evaluation metrics table, t-SNE plots, and last query metrics."""
     rows = _get_eval_rows()
     total_images = _count_dataset_images()
+    total_classes = len(getattr(settings, "SELECTED_CLASSES", []) or [])
 
     # Locate t-SNE plots
     tsne_plots = {}
     for key in ("resnet", "zfnet", "googlenet"):
         plot_file = settings.TSNE_PLOTS_DIR / f"tsne_{key}.png"
         if plot_file.exists():
-            tsne_plots[key] = f"tsne_plots/tsne_{key}.png"
+            tsne_plots[key] = {
+                "url": f"tsne_plots/tsne_{key}.png",
+                "updated_at": datetime.fromtimestamp(plot_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
+            }
+
+    # Retrieve last query metrics from session (dynamic per-query)
+    last_query = request.session.get("last_query_metrics", None)
 
     context = {
         "rows": rows,
         "tsne_plots": tsne_plots,
         "model_configs": settings.MODEL_CONFIGS,
         "total_images": total_images,
+        "total_classes": total_classes,
+        "last_query": last_query,
     }
     return render(request, "metrics.html", context)
 
@@ -301,25 +412,60 @@ def dashboard(request):
 
 
 # ══════════════════════════════════════════════
-# History (login required)
+# History (public — shows all searches, or user's own)
 # ══════════════════════════════════════════════
 
-@login_required(login_url="user_login")
 def history(request):
-    """User search history."""
-    all_searches = SearchHistory.objects.filter(user=request.user)[:50]
+    """Search history — accessible to everyone."""
+    if request.user.is_authenticated:
+        all_searches = SearchHistory.objects.filter(user=request.user)[:50]
+    else:
+        # Show all anonymous + all searches for non-logged-in users
+        all_searches = SearchHistory.objects.all()[:50]
+
     search_list = []
     for s in all_searches:
         search_list.append({
+            "id": s.pk,
             "model_display": s.model_display,
+            "model_key": s.model_key,
             "query_image_url": s.query_image_url,
             "top_result_class": s.top_result_class,
             "top_similarity": f"{s.top_similarity:.4f}" if s.top_similarity else None,
             "result_count": s.result_count,
             "created_at": s.created_at,
+            "has_results": bool(s.results_json),
         })
 
     return render(request, "history.html", {"searches": search_list})
+
+
+# ══════════════════════════════════════════════
+# Result Detail (revisit a past search)
+# ══════════════════════════════════════════════
+
+def result_detail(request, search_id):
+    """Revisit a previously saved search result."""
+    from django.shortcuts import get_object_or_404
+
+    record = get_object_or_404(SearchHistory, pk=search_id)
+    results = record.get_results()
+    query_metrics = record.get_query_metrics()
+    model_display = record.model_display
+    query_image_url = record.query_image_url
+
+    context = {
+        "query_image_url": query_image_url,
+        "model_key": record.model_key,
+        "model_name": model_display,
+        "results": results,
+        "class_names": settings.SELECTED_CLASSES,
+        "query_metrics": query_metrics,
+        "search_id": record.pk,
+        "is_historical": True,
+        "search_date": record.created_at,
+    }
+    return render(request, "results.html", context)
 
 
 # ══════════════════════════════════════════════

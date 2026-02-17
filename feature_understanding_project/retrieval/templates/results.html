@@ -8,20 +8,72 @@
 {% block content %}
 <!-- Query Info Banner -->
 <section class="results-header">
-    <h1 class="page-title">Retrieval Results</h1>
+    <h1 class="page-title">
+        {% if is_historical %}Saved Result{% else %}Retrieval Results{% endif %}
+    </h1>
     <div class="result-meta">
         <span class="meta-badge model-badge">{{ model_name }}</span>
         <span class="meta-badge">Top-10 by Cosine Similarity</span>
+        {% if query_metrics.confidence_level == "high" %}
+        <span class="meta-badge" style="background:rgba(34,197,94,0.15);color:#16a34a;">&#x2713; High Confidence</span>
+        {% elif query_metrics.confidence_level == "medium" %}
+        <span class="meta-badge" style="background:rgba(234,179,8,0.15);color:#ca8a04;">&#x26A0; Medium Confidence</span>
+        {% elif query_metrics.confidence_level == "low" %}
+        <span class="meta-badge" style="background:rgba(239,68,68,0.15);color:#dc2626;">&#x26A0; Low Confidence</span>
+        {% endif %}
+        {% if is_historical %}
+        <span class="meta-badge" style="background:rgba(99,102,241,0.12);color:var(--accent);">
+            &#x1F4C5; {{ search_date|date:"d M Y, H:i" }}
+        </span>
+        {% endif %}
     </div>
 </section>
 
-<!-- Query Image -->
+<!-- Summary Banner -->
+{% if query_metrics %}
+<section style="margin-bottom:1.5rem;">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:center;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;">
+        <!-- Query Image (inline) -->
+        <div style="flex-shrink:0;">
+            <img src="{% static query_image_url %}" alt="Query image"
+                 style="width:100px;height:100px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
+        </div>
+        <!-- Quick Stats -->
+        <div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+                <span style="font-size:1.4rem;font-weight:800;color:var(--accent);">{{ query_metrics.predicted_class }}</span>
+                <span style="font-size:0.85rem;color:var(--text-muted);">&mdash; predicted class</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:1.5rem;">
+                <div>
+                    <span style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Top-1 Sim</span><br>
+                    <strong style="font-size:1.15rem;">{{ query_metrics.top1_similarity }}</strong>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Avg Sim</span><br>
+                    <strong style="font-size:1.15rem;">{{ query_metrics.avg_similarity }}</strong>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Consistency</span><br>
+                    <strong style="font-size:1.15rem;">{{ query_metrics.class_consistency }}%</strong>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Results</span><br>
+                    <strong style="font-size:1.15rem;">{{ query_metrics.total_results }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<!-- Fallback: Query Image only -->
 <section class="query-section">
     <h2 class="section-title">Query Image</h2>
     <div class="query-card">
         <img src="{% static query_image_url %}" alt="Query image" class="query-image">
     </div>
 </section>
+{% endif %}
 
 <!-- Retrieved Images Grid -->
 <section class="results-section">
@@ -49,9 +101,100 @@
     </div>
 </section>
 
+<!-- Detailed Metrics (collapsible) -->
+{% if query_metrics %}
+<section class="metrics-section" style="margin-top:1.5rem;">
+    <details open>
+        <summary style="cursor:pointer;font-size:1.1rem;font-weight:700;margin-bottom:1rem;">
+            &#x1F4CA; Detailed Query Metrics
+        </summary>
+
+        <div class="info-grid">
+            <!-- Similarity Scores -->
+            <div class="info-card">
+                <h3>Similarity Scores</h3>
+                <div class="table-wrapper" style="margin-top:0.5rem;">
+                    <table class="metrics-table" style="max-width:100%;">
+                        <tbody>
+                            <tr><td>Top-1 Similarity</td><td><strong>{{ query_metrics.top1_similarity }}</strong></td></tr>
+                            <tr><td>Average (Top-10)</td><td><strong>{{ query_metrics.avg_similarity }}</strong></td></tr>
+                            <tr><td>Minimum (Top-10)</td><td>{{ query_metrics.min_similarity }}</td></tr>
+                            {% if query_metrics.db_mean_similarity %}
+                            <tr><td>DB Mean Similarity</td><td>{{ query_metrics.db_mean_similarity }}</td></tr>
+                            <tr><td>DB Max Similarity</td><td>{{ query_metrics.db_max_similarity }}</td></tr>
+                            <tr><td>DB Std Deviation</td><td>{{ query_metrics.db_std_similarity }}</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Classification -->
+            <div class="info-card">
+                <h3>Classification</h3>
+                <div class="table-wrapper" style="margin-top:0.5rem;">
+                    <table class="metrics-table" style="max-width:100%;">
+                        <tbody>
+                            <tr><td>Predicted Class</td><td><strong style="color:var(--accent);">{{ query_metrics.predicted_class }}</strong></td></tr>
+                            <tr><td>Class Consistency</td><td>{{ query_metrics.class_consistency }}%</td></tr>
+                            <tr>
+                                <td>Confidence</td>
+                                <td>
+                                    {% if query_metrics.confidence_level == "high" %}
+                                    <span style="color:#16a34a;font-weight:700;">&#x2713; High</span>
+                                    {% elif query_metrics.confidence_level == "medium" %}
+                                    <span style="color:#ca8a04;font-weight:700;">&#x26A0; Medium</span>
+                                    {% else %}
+                                    <span style="color:#dc2626;font-weight:700;">&#x26A0; Low</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Class Distribution -->
+            {% if query_metrics.class_distribution %}
+            <div class="info-card">
+                <h3>Class Distribution</h3>
+                <div class="table-wrapper" style="margin-top:0.5rem;">
+                    <table class="metrics-table" style="max-width:100%;">
+                        <thead><tr><th>Class</th><th>Count</th><th>%</th></tr></thead>
+                        <tbody>
+                            {% for cd in query_metrics.class_distribution %}
+                            <tr>
+                                <td><strong>{{ cd.class_name }}</strong></td>
+                                <td>{{ cd.count }}</td>
+                                <td>
+                                    <div class="metric-bar">
+                                        <span class="metric-value">{{ cd.pct }}%</span>
+                                        <div class="metric-bar-track">
+                                            <div class="metric-bar-fill" style="width:{{ cd.pct }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </details>
+</section>
+{% endif %}
+
 <!-- Actions -->
-<div class="actions">
-    <a href="{% url 'search_page' %}" class="btn btn-secondary">← New Search</a>
-    <a href="{% url 'metrics' %}" class="btn btn-outline">📊 View Metrics</a>
+<div class="actions" style="margin-top:1.5rem;">
+    <a href="{% url 'search_page' %}" class="btn btn-secondary">&larr; New Search</a>
+    <a href="{% url 'metrics' %}" class="btn btn-outline">&#x1F4CA; Metrics</a>
+    <a href="{% url 'history' %}" class="btn btn-outline">&#x1F4CB; History</a>
+    {% if search_id %}
+    <span style="color:var(--text-muted);font-size:0.85rem;align-self:center;">
+        Permalink: <a href="{% url 'result_detail' search_id %}" style="color:var(--accent);">Result #{{ search_id }}</a>
+    </span>
+    {% endif %}
 </div>
 {% endblock %}

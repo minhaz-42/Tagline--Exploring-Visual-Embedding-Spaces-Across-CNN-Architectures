@@ -37,8 +37,8 @@
                 {% endif %}
                 <a href="{% url 'search_page' %}" class="nav-link {% block nav_search %}{% endblock %}">Search</a>
                 <a href="{% url 'metrics' %}" class="nav-link {% block nav_metrics %}{% endblock %}">Metrics</a>
-                {% if user.is_authenticated %}
                 <a href="{% url 'history' %}" class="nav-link {% block nav_history %}{% endblock %}">History</a>
+                {% if user.is_authenticated %}
                 <div class="nav-user">
                     <span class="user-avatar">{{ user.username|make_list|first|upper }}</span>
                     <a href="{% url 'user_logout' %}" class="nav-link nav-logout">Logout</a>

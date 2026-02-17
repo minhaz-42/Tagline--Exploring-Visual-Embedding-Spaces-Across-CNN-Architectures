@@ -7,40 +7,76 @@
 {% block content %}
 <header class="page-header">
     <h1 class="page-title">Search History</h1>
-    <p class="page-subtitle">Your past image retrieval queries and results</p>
+    <p class="page-subtitle">All past image retrieval queries — click any entry to revisit full results</p>
 </header>
 
 {% if searches %}
-<div class="history-list">
-    {% for item in searches %}
-    <div class="history-item">
-        {% if item.query_image_url %}
-        <img src="{% static item.query_image_url %}" alt="Query" class="history-thumb">
-        {% else %}
-        <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--text-muted)">🖼️</div>
-        {% endif %}
-        <div class="history-details">
-            <h4>{{ item.model_display }}</h4>
-            <p>
-                Top result: <strong>{{ item.top_result_class|default:"—" }}</strong>
-                · {{ item.result_count }} results returned
-                · Similarity: {{ item.top_similarity|default:"—" }}
-            </p>
-        </div>
-        <div class="history-time">
-            {{ item.created_at|timesince }} ago
-        </div>
-    </div>
-    {% endfor %}
+<div class="table-wrapper" style="margin-bottom:2rem;">
+    <table class="metrics-table">
+        <thead>
+            <tr>
+                <th style="width:60px;">Image</th>
+                <th>Model</th>
+                <th>Top Result</th>
+                <th>Similarity</th>
+                <th>Results</th>
+                <th>Time</th>
+                <th style="width:100px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in searches %}
+            <tr>
+                <td>
+                    {% if item.query_image_url %}
+                    <img src="{% static item.query_image_url %}" alt="Query"
+                         style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+                    {% else %}
+                    <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+                                background:var(--surface);border-radius:6px;font-size:1.2rem;color:var(--text-muted);">
+                        &#x1F5BC;
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="meta-badge model-badge" style="font-size:0.8rem;">{{ item.model_display }}</span>
+                </td>
+                <td>
+                    <strong>{{ item.top_result_class|default:"—" }}</strong>
+                </td>
+                <td>
+                    {% if item.top_similarity %}
+                    <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">{{ item.top_similarity }}</span>
+                    {% else %}
+                    <span style="color:var(--text-muted);">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.result_count }}</td>
+                <td style="color:var(--text-muted);font-size:0.85rem;">
+                    {{ item.created_at|timesince }} ago
+                </td>
+                <td>
+                    {% if item.has_results %}
+                    <a href="{% url 'result_detail' item.id %}" class="btn btn-outline" style="font-size:0.8rem;padding:0.3rem 0.75rem;">
+                        View
+                    </a>
+                    {% else %}
+                    <span style="color:var(--text-muted);font-size:0.8rem;">N/A</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <div class="actions">
-    <a href="{% url 'search_page' %}" class="btn btn-primary">🔍 New Search</a>
+    <a href="{% url 'search_page' %}" class="btn btn-primary">&#x1F50D; New Search</a>
 </div>
 
 {% else %}
 <div class="empty-state">
-    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-icon">&#x1F50D;</div>
     <h3>No searches yet</h3>
     <p>Start by uploading an image to find visually similar results across CNN embedding spaces.</p>
     <a href="{% url 'search_page' %}" class="btn btn-primary btn-lg">Start Searching</a>

@@ -9,15 +9,112 @@
     <h1 class="page-title">Evaluation Metrics</h1>
     <p class="page-subtitle">
         Quantitative comparison of embedding quality across
-        ResNet-101, ZFNet, and GoogLeNet on 8 Caltech-101 classes
+        ResNet-101, ZFNet, and GoogLeNet on {{ total_classes }} classes
         ({{ total_images }} images, leave-one-out evaluation).
     </p>
 </header>
 
-<!-- Metrics Table -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- DYNAMIC: Last Query Metrics                -->
+<!-- ═══════════════════════════════════════════ -->
+{% if last_query %}
+<section class="metrics-section" style="border:2px solid var(--accent);border-radius:12px;padding:1.5rem;margin-bottom:2rem;background:rgba(99,102,241,0.04);">
+    <h2 class="section-title" style="display:flex;align-items:center;gap:0.5rem;">
+        &#x1F50D; Latest Query Results
+        <span class="meta-badge model-badge" style="font-size:0.8rem;">{{ last_query.model_name }}</span>
+    </h2>
+    <p class="section-subtitle">Dynamic metrics from your most recent image query (this section updates every search)</p>
+
+    <div class="info-grid">
+        <!-- Query Image + Predicted Class -->
+        <div class="info-card" style="text-align:center;">
+            <h3>Query Image</h3>
+            {% if last_query.query_image_url %}
+            <img src="{% static last_query.query_image_url %}" alt="Last query" style="max-height:120px;border-radius:8px;margin:0.5rem auto;">
+            {% endif %}
+            <div class="info-dim" style="font-size:1.2rem;color:var(--accent);margin-top:0.5rem;">
+                Predicted: {{ last_query.predicted_class }}
+            </div>
+        </div>
+
+        <!-- Similarity Metrics -->
+        <div class="info-card">
+            <h3>Query Similarity Scores</h3>
+            <div class="table-wrapper" style="margin-top:0.5rem;">
+                <table class="metrics-table" style="max-width:100%;">
+                    <thead>
+                        <tr><th>Metric</th><th>Value</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Top-1 Similarity</td><td><strong>{{ last_query.top1_similarity }}</strong></td></tr>
+                        <tr><td>Avg Top-10 Similarity</td><td><strong>{{ last_query.avg_similarity }}</strong></td></tr>
+                        <tr><td>Min Top-10 Similarity</td><td>{{ last_query.min_similarity }}</td></tr>
+                        <tr><td>Class Consistency</td><td>{{ last_query.class_consistency }}%</td></tr>
+                        <tr>
+                            <td>Confidence</td>
+                            <td>
+                                {% if last_query.confidence_level == "high" %}
+                                <span style="color:#16a34a;font-weight:700;">&#x2713; High</span>
+                                {% elif last_query.confidence_level == "medium" %}
+                                <span style="color:#ca8a04;font-weight:700;">&#x26A0; Medium</span>
+                                {% else %}
+                                <span style="color:#dc2626;font-weight:700;">&#x26A0; Low</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Database Comparison -->
+        <div class="info-card">
+            <h3>Database Comparison</h3>
+            <div class="table-wrapper" style="margin-top:0.5rem;">
+                <table class="metrics-table" style="max-width:100%;">
+                    <thead>
+                        <tr><th>Metric</th><th>Value</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>DB Mean Similarity</td><td>{{ last_query.db_mean_similarity }}</td></tr>
+                        <tr><td>DB Max Similarity</td><td>{{ last_query.db_max_similarity }}</td></tr>
+                        <tr><td>DB Std Deviation</td><td>{{ last_query.db_std_similarity }}</td></tr>
+                        <tr><td>Model Used</td><td>{{ last_query.model_name }} ({{ last_query.embedding_dim }}-d)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Distribution -->
+    {% if last_query.class_distribution %}
+    <div style="margin-top:1rem;">
+        <h3 style="margin-bottom:0.75rem;">Top-10 Class Distribution</h3>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            {% for cd in last_query.class_distribution %}
+            <span class="meta-badge" style="font-size:0.85rem;">
+                {{ cd.class_name }}: {{ cd.count }} ({{ cd.pct }}%)
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% else %}
+<section class="metrics-section" style="border:1px dashed var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem;text-align:center;">
+    <p style="color:var(--text-muted);margin:0;">
+        &#x1F50D; <strong>No query performed yet.</strong>
+        <a href="{% url 'search_page' %}">Upload an image</a> to see per-query metrics here.
+    </p>
+</section>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- STATIC: Dataset-level Metrics              -->
+<!-- ═══════════════════════════════════════════ -->
 <section class="metrics-section">
-    <h2 class="section-title">Retrieval Performance</h2>
-    <p class="section-subtitle">Top-10 retrieval accuracy and Mean Average Precision computed via leave-one-out cosine similarity</p>
+    <h2 class="section-title">Dataset Retrieval Performance (Static Benchmark)</h2>
+    <p class="section-subtitle">Top-10 retrieval accuracy and Mean Average Precision computed via leave-one-out cosine similarity on the full dataset. These values stay fixed until you rerun the offline pipeline.</p>
 
     <div class="table-wrapper">
         <table class="metrics-table">
@@ -104,9 +201,8 @@
         </div>
         <div class="info-card">
             <h3>Dataset</h3>
-            <div class="info-dim">8 Classes</div>
-            <p>Evaluated on {{ total_images }} images from 8 Caltech-101 categories: 
-            accordion, airplane, camera, elephant, laptop, motorbike, watch, and wheelchair. 
+            <div class="info-dim">{{ total_classes }} Classes</div>
+            <p>Evaluated on {{ total_images }} images from {{ total_classes }} dataset classes.
             All models use ImageNet pre-trained weights.</p>
         </div>
     </div>
@@ -114,15 +210,15 @@
 
 <!-- t-SNE Visualizations -->
 <section class="tsne-section">
-    <h2 class="section-title">t-SNE Embedding Visualizations</h2>
+    <h2 class="section-title">t-SNE Embedding Visualizations (Static Dataset Maps)</h2>
     <p class="section-description">
-        2-D t-SNE projections of the feature embedding spaces.
-        Each colour represents one of the 8 selected Caltech-101 classes.
+        2-D t-SNE projections of the full dataset embedding spaces.
+        These plots are generated offline and do not change per query; they update only when you rerun the pipeline.
     </p>
 
     {% if tsne_plots %}
     <div class="tsne-grid">
-        {% for key, plot_url in tsne_plots.items %}
+        {% for key, plot in tsne_plots.items %}
         <div class="tsne-card">
             <h3 class="tsne-model-name">
                 {% if key == "resnet" %}ResNet-101 (2048-d)
@@ -130,7 +226,8 @@
                 {% elif key == "googlenet" %}GoogLeNet / Inception v1 (1024-d)
                 {% endif %}
             </h3>
-            <img src="{% static plot_url %}" alt="t-SNE for {{ key }}" class="tsne-image">
+            <div class="info-dim" style="margin-bottom:0.5rem;">Last updated: {{ plot.updated_at }}</div>
+            <img src="{% static plot.url %}" alt="t-SNE for {{ key }}" class="tsne-image">
         </div>
         {% endfor %}
     </div>
@@ -144,6 +241,6 @@
 
 <!-- Back -->
 <div class="actions">
-    <a href="{% url 'search_page' %}" class="btn btn-secondary">← Back to Search</a>
+    <a href="{% url 'search_page' %}" class="btn btn-secondary">&larr; Back to Search</a>
 </div>
 {% endblock %}

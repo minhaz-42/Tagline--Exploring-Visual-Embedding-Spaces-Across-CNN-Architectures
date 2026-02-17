@@ -3,8 +3,9 @@ visualize_tsne.py
 -----------------
 Generates t-SNE scatter plots of the embedding spaces for each CNN model.
 
-Each plot colours points by class label, with a legend showing the 8
-selected Caltech-101 categories.  Plots are saved as PNG files under
+Each plot colours points by class label. For small numbers of classes (<=20),
+a legend is included. For larger datasets (e.g. CIFAR-100), a colorbar is
+used. Plots are saved as PNG files under
 ``retrieval/static/tsne_plots/`` so Django's ``{% static %}`` tag can serve them.
 """
 
@@ -18,22 +19,19 @@ import matplotlib
 
 matplotlib.use("Agg")  # Non-interactive backend (server-safe)
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from sklearn.manifold import TSNE
 
 
 # ══════════════════════════════════════════════
-# Colour palette (8 classes)
+# Colour palette (for <=20 classes)
 # ══════════════════════════════════════════════
 
-CLASS_COLORS = [
-    "#e6194B",  # accordion  – red
-    "#3cb44b",  # airplane   – green
-    "#4363d8",  # camera     – blue
-    "#f58231",  # elephant   – orange
-    "#911eb4",  # laptop     – purple
-    "#42d4f4",  # motorbike  – cyan
-    "#f032e6",  # watch      – magenta
-    "#bfef45",  # wheelchair – lime
+CLASS_COLORS_20 = [
+    "#e6194B", "#3cb44b", "#4363d8", "#f58231", "#911eb4",
+    "#42d4f4", "#f032e6", "#bfef45", "#fabed4", "#469990",
+    "#dcbeff", "#9A6324", "#fffac8", "#800000", "#aaffc3",
+    "#808000", "#ffd8b1", "#000075", "#a9a9a9", "#e6beff",
 ]
 
 
@@ -46,39 +44,30 @@ def generate_tsne_plot(
     perplexity: int = 30,
     n_iter: int = 1000,
     random_state: int = 42,
+    max_points: int = 5000,
 ) -> str:
     """
     Run t-SNE on *embeddings* and save a scatter plot to *save_path*.
 
-    Parameters
-    ----------
-    embeddings : np.ndarray, shape (N, D)
-    labels : np.ndarray, shape (N,)
-    class_names : list[str]
-        Ordered class names (index corresponds to label int).
-    model_name : str
-        Human-readable model name used in the plot title.
-    save_path : str or Path
-        Destination PNG file.
-    perplexity : int
-    n_iter : int
-    random_state : int
-
-    Returns
-    -------
-    str
-        Absolute path to the saved plot.
+    For large datasets, automatically subsamples to *max_points* for
+    computational feasibility. Adapts coloring strategy based on the
+    number of unique classes.
     """
     save_path = Path(save_path)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Sub-sample for large datasets
+    if len(embeddings) > max_points:
+        rng = np.random.RandomState(random_state)
+        idx = rng.choice(len(embeddings), max_points, replace=False)
+        embeddings = embeddings[idx]
+        labels = labels[idx]
+
     print(f"[t-SNE] Running for {model_name} (n={len(embeddings)}, D={embeddings.shape[1]}) ...")
 
-    # sklearn's TSNE uses `max_iter` (some versions accept `n_iter`);
-    # pass the requested iterations as `max_iter` for compatibility.
     tsne = TSNE(
         n_components=2,
-        perplexity=perplexity,
+        perplexity=min(perplexity, len(embeddings) // 4),
         max_iter=n_iter,
         random_state=random_state,
         learning_rate="auto",
@@ -87,35 +76,42 @@ def generate_tsne_plot(
     coords = tsne.fit_transform(embeddings)  # (N, 2)
 
     # ── Plot ──
-    fig, ax = plt.subplots(figsize=(12, 9))
-
     unique_labels = sorted(np.unique(labels))
-    for lbl in unique_labels:
-        mask = labels == lbl
-        color = CLASS_COLORS[lbl % len(CLASS_COLORS)]
-        ax.scatter(
-            coords[mask, 0],
-            coords[mask, 1],
-            c=color,
-            label=class_names[lbl],
-            s=18,
-            alpha=0.75,
-            edgecolors="none",
+    n_classes = len(unique_labels)
+
+    fig, ax = plt.subplots(figsize=(14, 10))
+
+    if n_classes <= 20:
+        # Discrete legend for small number of classes
+        for lbl in unique_labels:
+            mask = labels == lbl
+            color = CLASS_COLORS_20[lbl % len(CLASS_COLORS_20)]
+            name = class_names[lbl] if lbl < len(class_names) else f"Class {lbl}"
+            ax.scatter(
+                coords[mask, 0], coords[mask, 1],
+                c=color, label=name, s=20, alpha=0.75, edgecolors="none",
+            )
+        ax.legend(
+            loc="best", fontsize=9, markerscale=2.5,
+            framealpha=0.9, ncol=max(1, n_classes // 10),
         )
+    else:
+        # Colormap for many classes (e.g. CIFAR-100)
+        cmap = cm.get_cmap("tab20", n_classes) if n_classes <= 100 else cm.get_cmap("viridis")
+        scatter = ax.scatter(
+            coords[:, 0], coords[:, 1],
+            c=labels, cmap=cmap, s=10, alpha=0.6, edgecolors="none",
+        )
+        cbar = plt.colorbar(scatter, ax=ax, shrink=0.75, pad=0.02)
+        cbar.set_label("Class Index", fontsize=11)
 
     ax.set_title(f"t-SNE Visualization — {model_name}", fontsize=16, fontweight="bold")
     ax.set_xlabel("t-SNE Dimension 1", fontsize=12)
     ax.set_ylabel("t-SNE Dimension 2", fontsize=12)
-    ax.legend(
-        loc="best",
-        fontsize=10,
-        markerscale=2.5,
-        framealpha=0.9,
-    )
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=0.2)
     fig.tight_layout()
 
-    fig.savefig(str(save_path), dpi=150)
+    fig.savefig(str(save_path), dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     print(f"[t-SNE] Plot saved → {save_path}")

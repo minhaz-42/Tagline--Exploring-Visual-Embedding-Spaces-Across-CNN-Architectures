@@ -8,6 +8,8 @@ relational database for embeddings.  The Django model below is kept minimal
 – it simply records uploaded query images so they can be cleaned up later.
 """
 
+import json
+
 from django.conf import settings
 from django.db import models
 
@@ -49,6 +51,10 @@ class SearchHistory(models.Model):
     result_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ── New: store full results and metrics so searches can be revisited ──
+    results_json = models.TextField(blank=True, default="")
+    query_metrics_json = models.TextField(blank=True, default="")
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Search histories"
@@ -66,3 +72,22 @@ class SearchHistory(models.Model):
         if self.query_image_filename:
             return f"uploads/{self.query_image_filename}"
         return ""
+
+    def get_results(self):
+        """Deserialise stored retrieval results."""
+        if self.results_json:
+            try:
+                return json.loads(self.results_json)
+            except json.JSONDecodeError:
+                pass
+        return []
+
+    def get_query_metrics(self):
+        """Deserialise stored query metrics."""
+        if self.query_metrics_json:
+            try:
+                return json.loads(self.query_metrics_json)
+            except json.JSONDecodeError:
+                pass
+        return {}
+

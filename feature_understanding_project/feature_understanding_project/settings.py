@@ -102,18 +102,24 @@ for _dir in [EMBEDDINGS_DIR, TSNE_PLOTS_DIR, UPLOADS_DIR, MEDIA_ROOT]:
     _dir.mkdir(parents=True, exist_ok=True)
 
 # ──────────────────────────────────────────────
-# Selected classes from Caltech-101
+# Selected classes (auto-detected from embeddings or fallback)
 # ──────────────────────────────────────────────
-SELECTED_CLASSES = [
-    "accordion",
-    "airplane",
-    "camera",
-    "elephant",
-    "laptop",
-    "motorbike",
-    "watch",
-    "wheelchair",
-]
+_CLASS_NAMES_FILE = EMBEDDINGS_DIR / "class_names.json"
+if _CLASS_NAMES_FILE.exists():
+    import json as _json
+    with open(_CLASS_NAMES_FILE, "r") as _f:
+        SELECTED_CLASSES = _json.load(_f)
+else:
+    SELECTED_CLASSES = [
+        "accordion",
+        "airplane",
+        "camera",
+        "elephant",
+        "laptop",
+        "motorbike",
+        "watch",
+        "wheelchair",
+    ]
 
 # ──────────────────────────────────────────────
 # Model configuration

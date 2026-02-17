@@ -11,6 +11,11 @@ urlpatterns = [
     path("search/", views.search_page, name="search_page"),
     path("search/go/", views.search, name="search"),
     path("metrics/", views.metrics, name="metrics"),
+    path("history/", views.history, name="history"),
+    path("result/<int:search_id>/", views.result_detail, name="result_detail"),
+
+    # Favicon
+    path("favicon.ico", views.favicon, name="favicon"),
 
     # Auth
     path("login/", views.user_login, name="user_login"),
@@ -19,5 +24,4 @@ urlpatterns = [
 
     # Authenticated pages
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("history/", views.history, name="history"),
 ]

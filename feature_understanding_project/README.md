@@ -1,6 +1,8 @@
 # Tagline — Exploring Visual Embedding Spaces Across CNN Architectures
 
-A complete research + web system for comparing feature embeddings from pretrained CNN models (**ResNet-101**, **ZFNet**, **GoogLeNet**) using the **Caltech-101** dataset (8 selected classes).
+A complete research + web system for comparing feature embeddings from pretrained CNN models (**ResNet-101**, **ZFNet**, **GoogLeNet**) on either:
+- a small **Caltech-101 subset** (8 classes), or
+- **CIFAR-100** (100 classes)
 
 Built with **PyTorch** · **Django** · **Scikit-learn** · **Matplotlib**
 
@@ -183,8 +185,42 @@ Visit: **http://127.0.0.1:8000/**
 
 ### Evaluation Metrics (`/metrics/`)
 
-- **Comparison table:** Model | Top-10 Accuracy | mAP
-- **t-SNE scatter plots** for each model (colour-coded by class)
+- **Latest Query Results (dynamic):** Updates on every new search (top-1 similarity, avg top-10 similarity, confidence, class consistency, distribution).
+- **Dataset Retrieval Performance (static benchmark):** Model | Top-10 Accuracy | mAP, computed offline and fixed until pipeline reruns.
+- **t-SNE scatter plots (static dataset maps):** Generated offline from full embeddings and fixed until pipeline reruns.
+
+If you notice the 3 model t-SNE images looking "fixed", that is expected behavior.
+They represent global dataset structure, not per-query plots.
+
+### Pipeline Modes
+
+#### A) Caltech subset pipeline
+
+```bash
+python run_pipeline.py --dataset_dir ./dataset
+```
+
+#### B) CIFAR-100 pipeline
+
+```bash
+python run_cifar100_pipeline.py --max_per_class 50 --batch_size 64 --save_per_class 30
+```
+
+This generates/overwrites:
+- `embeddings/resnet_embeddings.npy`
+- `embeddings/zfnet_embeddings.npy`
+- `embeddings/googlenet_embeddings.npy`
+- `embeddings/labels.npy`
+- `embeddings/image_paths.json`
+- `embeddings/evaluation_results.json`
+- `embeddings/class_names.json`
+- `retrieval/static/tsne_plots/tsne_*.png`
+
+After running a new pipeline, restart Django server:
+
+```bash
+python manage.py runserver
+```
 
 ---
 

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Statistical Benchmark — Visual Embedding Explorer{% endblock %}
+{% block nav_benchmark %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Statistical Benchmark</h1>
+    <p class="page-subtitle">
+        Rigorous statistical evaluation including leave-one-out, stratified train/test splits,
+        paired t-tests, and confidence intervals across all CNN architectures.
+    </p>
+</header>
+
+{% if has_data %}
+
+<!-- Model Results Table -->
+<section class="metrics-section">
+    <h2 class="section-title">Per-Model Performance</h2>
+    <div class="table-wrapper">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>LOO Accuracy</th>
+                    <th>LOO mAP</th>
+                    <th>Split Acc (mean)</th>
+                    <th>Split Acc (std)</th>
+                    <th>Split mAP (mean)</th>
+                    <th>Split mAP (std)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, mr in model_results.items %}
+                <tr>
+                    <td><strong>{{ key|title }}</strong></td>
+                    <td>
+                        <div class="metric-bar">
+                            <span class="metric-value">{{ mr.loo_accuracy|floatformat:4 }}</span>
+                            <div class="metric-bar-track">
+                                <div class="metric-bar-fill" style="width:{% widthratio mr.loo_accuracy 1 100 %}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ mr.loo_mAP|floatformat:4 }}</td>
+                    <td>{{ mr.split_accuracy_mean|floatformat:4 }}</td>
+                    <td>{{ mr.split_accuracy_std|floatformat:4 }}</td>
+                    <td>{{ mr.split_mAP_mean|floatformat:4 }}</td>
+                    <td>{{ mr.split_mAP_std|floatformat:4 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Confidence Intervals -->
+<section class="metrics-section">
+    <h2 class="section-title">Confidence Intervals (95%)</h2>
+    <div class="info-grid">
+        {% for key, mr in model_results.items %}
+        <div class="info-card">
+            <h3>{{ key|title }}</h3>
+            {% if mr.ci_accuracy %}
+            <p>
+                <strong>Accuracy CI:</strong>
+                [{{ mr.ci_accuracy.0|floatformat:4 }}, {{ mr.ci_accuracy.1|floatformat:4 }}]
+            </p>
+            {% endif %}
+            {% if mr.ci_mAP %}
+            <p>
+                <strong>mAP CI:</strong>
+                [{{ mr.ci_mAP.0|floatformat:4 }}, {{ mr.ci_mAP.1|floatformat:4 }}]
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Paired t-Tests -->
+{% if t_test_results %}
+<section class="metrics-section">
+    <h2 class="section-title">Paired t-Test Results</h2>
+    <p class="section-subtitle">Bonferroni-corrected significance tests between model pairs</p>
+    <div class="table-wrapper">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Comparison</th>
+                    <th>Metric</th>
+                    <th>t-Statistic</th>
+                    <th>p-Value</th>
+                    <th>&alpha; (corrected)</th>
+                    <th>Significant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pair_key, tr in t_test_results.items %}
+                <tr>
+                    <td><strong>{{ pair_key }}</strong></td>
+                    <td>{{ tr.metric|default:"accuracy" }}</td>
+                    <td>{{ tr.statistic|floatformat:4 }}</td>
+                    <td>{{ tr.p_value|floatformat:6 }}</td>
+                    <td>{{ tr.alpha_corrected|floatformat:4 }}</td>
+                    <td>
+                        {% if tr.significant %}
+                        <span class="confidence-text-high">&#x2713; Yes</span>
+                        {% else %}
+                        <span class="confidence-text-low">&#x2717; No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- Plots -->
+{% if plots %}
+<section class="metrics-section">
+    <h2 class="section-title">Visualizations</h2>
+    <div class="info-grid">
+        {% for name, plot in plots.items %}
+        <div class="plot-container">
+            <h3>{{ name|title }}</h3>
+            <img src="{% static 'plots/' %}{{ name }}.png?v={{ plot.version }}"
+                 alt="{{ name }}" class="plot-image" loading="lazy">
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+
+<!-- No Data -->
+<div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <h3>Benchmark Not Yet Generated</h3>
+    <p>
+        Run the full benchmark pipeline to generate statistical results:
+    </p>
+    <pre class="code-block">python run_full_benchmark.py</pre>
+    <p class="text-muted" style="margin-top:1rem">
+        Use <code>--quick</code> for a faster run with fewer images, or
+        <code>--skip-robustness</code> to skip perturbation tests.
+    </p>
+</div>
+
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'metrics' %}" class="btn btn-secondary">&larr; Metrics</a>
+    <a href="{% url 'robustness' %}" class="btn btn-outline">🛡 Robustness</a>
+    <a href="{% url 'analysis' %}" class="btn btn-outline">🔬 Analysis</a>
+</div>
+{% endblock %}

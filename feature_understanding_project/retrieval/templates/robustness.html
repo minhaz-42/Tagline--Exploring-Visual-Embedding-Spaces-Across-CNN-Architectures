@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Robustness Testing — Visual Embedding Explorer{% endblock %}
+{% block nav_robustness %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Robustness Testing</h1>
+    <p class="page-subtitle">
+        Evaluating retrieval stability under image perturbations: rotation, Gaussian noise,
+        blur, brightness changes, and contrast modifications.
+    </p>
+</header>
+
+{% if has_data %}
+
+<!-- Per-Model Robustness Tables -->
+{% for model_key in model_keys %}
+{% with model_data=robustness_data %}
+<section class="metrics-section">
+    <h2 class="section-title">{{ model_key|title }} — Perturbation Results</h2>
+    <div class="table-wrapper">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Perturbation</th>
+                    <th>Severity</th>
+                    <th>Top-1 Acc</th>
+                    <th>Top-5 Acc</th>
+                    <th>Top-10 Acc</th>
+                    <th>Avg Sim</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for perturb_key, perturb_results in model_data.items %}
+                {% if perturb_key == model_key %}
+                {% for severity_key, sv in perturb_results.items %}
+                {% if sv.perturbation %}
+                <tr>
+                    <td><strong>{{ sv.perturbation }}</strong></td>
+                    <td>{{ sv.severity }}</td>
+                    <td>{{ sv.top1_accuracy|floatformat:4 }}</td>
+                    <td>{{ sv.top5_accuracy|floatformat:4 }}</td>
+                    <td>{{ sv.top10_accuracy|floatformat:4 }}</td>
+                    <td>{{ sv.avg_similarity|floatformat:4 }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endwith %}
+{% endfor %}
+
+<!-- Summary Overview -->
+<section class="metrics-section">
+    <h2 class="section-title">Robustness Overview</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>Rotation</h3>
+            <div class="info-dim">15° / 45° / 90°</div>
+            <p>Tests geometric invariance of the embedding space by rotating query images before feature extraction.</p>
+        </div>
+        <div class="info-card">
+            <h3>Gaussian Noise</h3>
+            <div class="info-dim">&sigma; = 0.01 / 0.05 / 0.1</div>
+            <p>Adds pixel-level noise to evaluate robustness to sensor noise and compression artefacts.</p>
+        </div>
+        <div class="info-card">
+            <h3>Blur</h3>
+            <div class="info-dim">Kernel 3 / 5 / 7</div>
+            <p>Applies Gaussian blur to simulate out-of-focus images and test frequency sensitivity.</p>
+        </div>
+        <div class="info-card">
+            <h3>Brightness</h3>
+            <div class="info-dim">&times;0.5 / &times;1.5 / &times;2.0</div>
+            <p>Modifies overall brightness to evaluate illumination invariance of features.</p>
+        </div>
+        <div class="info-card">
+            <h3>Contrast</h3>
+            <div class="info-dim">&times;0.5 / &times;1.5 / &times;2.0</div>
+            <p>Adjusts contrast to test stability under dynamic-range variations common in real-world images.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Plots -->
+{% if plots %}
+<section class="metrics-section">
+    <h2 class="section-title">Degradation Plots</h2>
+    <div class="info-grid">
+        {% for name, plot in plots.items %}
+        <div class="plot-container">
+            <h3>{{ name|title }}</h3>
+            <img src="{% static 'plots/' %}{{ name }}.png?v={{ plot.version }}"
+                 alt="{{ name }}" class="plot-image" loading="lazy">
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+
+<!-- No Data -->
+<div class="empty-state">
+    <div class="empty-state-icon">🛡</div>
+    <h3>Robustness Tests Not Yet Run</h3>
+    <p>
+        Generate robustness results by running the full benchmark pipeline:
+    </p>
+    <pre class="code-block">python run_full_benchmark.py</pre>
+    <p class="text-muted" style="margin-top:1rem">
+        Note: robustness evaluation processes up to 500 images per model &times; 15 perturbation
+        combinations. Use <code>--quick</code> to limit to 100 images for faster feedback.
+    </p>
+</div>
+
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'benchmark' %}" class="btn btn-secondary">&larr; Benchmark</a>
+    <a href="{% url 'analysis' %}" class="btn btn-outline">🔬 Analysis</a>
+    <a href="{% url 'metrics' %}" class="btn btn-outline">📊 Metrics</a>
+</div>
+{% endblock %}

@@ -11,17 +11,17 @@
 </header>
 
 {% if searches %}
-<div class="table-wrapper" style="margin-bottom:2rem;">
+<div class="table-wrapper history-table-wrap">
     <table class="metrics-table">
         <thead>
             <tr>
-                <th style="width:60px;">Image</th>
+                <th class="th-image">Image</th>
                 <th>Model</th>
                 <th>Top Result</th>
                 <th>Similarity</th>
                 <th>Results</th>
                 <th>Time</th>
-                <th style="width:100px;">Action</th>
+                <th class="th-action">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -30,38 +30,37 @@
                 <td>
                     {% if item.query_image_url %}
                     <img src="{% static item.query_image_url %}" alt="Query"
-                         style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">
+                         class="history-thumb-sm">
                     {% else %}
-                    <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-                                background:var(--surface);border-radius:6px;font-size:1.2rem;color:var(--text-muted);">
+                    <div class="history-thumb-fallback">
                         &#x1F5BC;
                     </div>
                     {% endif %}
                 </td>
                 <td>
-                    <span class="meta-badge model-badge" style="font-size:0.8rem;">{{ item.model_display }}</span>
+                    <span class="meta-badge model-badge badge-sm">{{ item.model_display }}</span>
                 </td>
                 <td>
                     <strong>{{ item.top_result_class|default:"—" }}</strong>
                 </td>
                 <td>
                     {% if item.top_similarity %}
-                    <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">{{ item.top_similarity }}</span>
+                    <span class="text-mono-strong">{{ item.top_similarity }}</span>
                     {% else %}
-                    <span style="color:var(--text-muted);">—</span>
+                    <span class="text-muted">—</span>
                     {% endif %}
                 </td>
                 <td>{{ item.result_count }}</td>
-                <td style="color:var(--text-muted);font-size:0.85rem;">
+                <td class="time-cell">
                     {{ item.created_at|timesince }} ago
                 </td>
                 <td>
                     {% if item.has_results %}
-                    <a href="{% url 'result_detail' item.id %}" class="btn btn-outline" style="font-size:0.8rem;padding:0.3rem 0.75rem;">
+                    <a href="{% url 'result_detail' item.id %}" class="btn btn-outline btn-xs">
                         View
                     </a>
                     {% else %}
-                    <span style="color:var(--text-muted);font-size:0.8rem;">N/A</span>
+                    <span class="text-muted-sm">N/A</span>
                     {% endif %}
                 </td>
             </tr>

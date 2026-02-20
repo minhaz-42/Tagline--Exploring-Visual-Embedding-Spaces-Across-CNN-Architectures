@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+{% load retrieval_tags %}
+
+{% block title %}Comparison Results — Visual Embedding Explorer{% endblock %}
+{% block nav_compare %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Multi-Model Comparison Results</h1>
+    <p class="page-subtitle">
+        Side-by-side top-10 retrieval results across all three CNN architectures
+    </p>
+</header>
+
+<!-- Query Image Banner -->
+<section class="summary-section">
+    <div class="summary-card">
+        <div class="summary-media">
+            <img src="{% static query_image_url %}" alt="Query image" class="summary-query-image">
+        </div>
+        <div>
+            <div class="summary-title-row">
+                <span class="summary-predicted-class">Query Image</span>
+                <span class="summary-predicted-label">&mdash; compared across {{ all_model_results|length }} model{{ all_model_results|length|pluralize }}</span>
+            </div>
+            <div class="summary-stats">
+                {% for key, mr in all_model_results.items %}
+                <div>
+                    <span class="summary-stat-label">{{ mr.model_name }}</span><br>
+                    <strong class="summary-stat-value">{{ mr.query_metrics.predicted_class }}</strong>
+                    <small>({{ mr.query_metrics.class_consistency }}%)</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Stats Comparison -->
+<section class="metrics-section">
+    <h2 class="section-title">Performance Summary</h2>
+    <div class="table-wrapper">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    {% for key, mr in all_model_results.items %}
+                    <th>{{ mr.model_name }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Predicted Class</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td><strong class="text-accent">{{ mr.query_metrics.predicted_class }}</strong></td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>Top-1 Similarity</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td><strong>{{ mr.query_metrics.top1_similarity }}</strong></td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>Avg Similarity</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td>{{ mr.query_metrics.avg_similarity }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>Class Consistency</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td>{{ mr.query_metrics.class_consistency }}%</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>Confidence</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td>
+                        {% if mr.query_metrics.confidence_level == "high" %}
+                        <span class="confidence-text-high">&#x2713; High</span>
+                        {% elif mr.query_metrics.confidence_level == "medium" %}
+                        <span class="confidence-text-medium">&#x26A0; Medium</span>
+                        {% else %}
+                        <span class="confidence-text-low">&#x26A0; Low</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>Embedding Dim</td>
+                    {% for key, mr in all_model_results.items %}
+                    <td><span class="dim-badge">{{ mr.embedding_dim }}-d</span></td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Side-by-Side Results Grid -->
+<section class="results-section">
+    <h2 class="section-title">Top-10 Retrieved Images per Model</h2>
+    <div class="compare-columns">
+        {% for key, mr in all_model_results.items %}
+        <div class="compare-column">
+            <h3 class="compare-column-title">{{ mr.model_name }}</h3>
+            <div class="results-grid results-grid-compact">
+                {% for r in mr.results %}
+                <div class="result-card">
+                    <div class="result-rank">#{{ r.rank }}</div>
+                    <div class="result-image-wrapper">
+                        <img src="{% dataset_image r.image_path %}"
+                             alt="{{ r.class_name }}"
+                             class="result-image" loading="lazy">
+                    </div>
+                    <div class="result-info">
+                        <span class="result-class">{{ r.class_name }}</span>
+                        <span class="result-similarity">{{ r.similarity }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="no-results">No results — embeddings missing for {{ key }}.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Actions -->
+<div class="actions actions-top">
+    <a href="{% url 'compare_page' %}" class="btn btn-secondary">&larr; New Comparison</a>
+    <a href="{% url 'search_page' %}" class="btn btn-outline">🔍 Single-Model Search</a>
+    <a href="{% url 'metrics' %}" class="btn btn-outline">📊 Metrics</a>
+</div>
+{% endblock %}

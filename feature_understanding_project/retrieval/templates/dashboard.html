@@ -72,7 +72,7 @@
             {% if item.query_image %}
             <img src="{% static item.query_image_url %}" alt="Query" class="history-thumb">
             {% else %}
-            <div class="history-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🖼️</div>
+            <div class="history-thumb history-thumb-icon">🖼️</div>
             {% endif %}
             <div class="history-details">
                 <h4>{{ item.model_display }}</h4>

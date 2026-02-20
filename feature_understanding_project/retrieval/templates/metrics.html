@@ -18,21 +18,21 @@
 <!-- DYNAMIC: Last Query Metrics                -->
 <!-- ═══════════════════════════════════════════ -->
 {% if last_query %}
-<section class="metrics-section" style="border:2px solid var(--accent);border-radius:12px;padding:1.5rem;margin-bottom:2rem;background:rgba(99,102,241,0.04);">
-    <h2 class="section-title" style="display:flex;align-items:center;gap:0.5rem;">
+<section class="metrics-section metrics-query-highlight">
+    <h2 class="section-title title-inline">
         &#x1F50D; Latest Query Results
-        <span class="meta-badge model-badge" style="font-size:0.8rem;">{{ last_query.model_name }}</span>
+        <span class="meta-badge model-badge badge-sm">{{ last_query.model_name }}</span>
     </h2>
     <p class="section-subtitle">Dynamic metrics from your most recent image query (this section updates every search)</p>
 
     <div class="info-grid">
         <!-- Query Image + Predicted Class -->
-        <div class="info-card" style="text-align:center;">
+        <div class="info-card text-center-card">
             <h3>Query Image</h3>
             {% if last_query.query_image_url %}
-            <img src="{% static last_query.query_image_url %}" alt="Last query" style="max-height:120px;border-radius:8px;margin:0.5rem auto;">
+            <img src="{% static last_query.query_image_url %}" alt="Last query" class="metrics-query-preview">
             {% endif %}
-            <div class="info-dim" style="font-size:1.2rem;color:var(--accent);margin-top:0.5rem;">
+            <div class="info-dim info-dim-lg">
                 Predicted: {{ last_query.predicted_class }}
             </div>
         </div>
@@ -40,8 +40,8 @@
         <!-- Similarity Metrics -->
         <div class="info-card">
             <h3>Query Similarity Scores</h3>
-            <div class="table-wrapper" style="margin-top:0.5rem;">
-                <table class="metrics-table" style="max-width:100%;">
+            <div class="table-wrapper table-wrapper-tight">
+                <table class="metrics-table metrics-table-full">
                     <thead>
                         <tr><th>Metric</th><th>Value</th></tr>
                     </thead>
@@ -54,11 +54,11 @@
                             <td>Confidence</td>
                             <td>
                                 {% if last_query.confidence_level == "high" %}
-                                <span style="color:#16a34a;font-weight:700;">&#x2713; High</span>
+                                <span class="confidence-text-high">&#x2713; High</span>
                                 {% elif last_query.confidence_level == "medium" %}
-                                <span style="color:#ca8a04;font-weight:700;">&#x26A0; Medium</span>
+                                <span class="confidence-text-medium">&#x26A0; Medium</span>
                                 {% else %}
-                                <span style="color:#dc2626;font-weight:700;">&#x26A0; Low</span>
+                                <span class="confidence-text-low">&#x26A0; Low</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -70,8 +70,8 @@
         <!-- Database Comparison -->
         <div class="info-card">
             <h3>Database Comparison</h3>
-            <div class="table-wrapper" style="margin-top:0.5rem;">
-                <table class="metrics-table" style="max-width:100%;">
+            <div class="table-wrapper table-wrapper-tight">
+                <table class="metrics-table metrics-table-full">
                     <thead>
                         <tr><th>Metric</th><th>Value</th></tr>
                     </thead>
@@ -88,11 +88,11 @@
 
     <!-- Class Distribution -->
     {% if last_query.class_distribution %}
-    <div style="margin-top:1rem;">
-        <h3 style="margin-bottom:0.75rem;">Top-10 Class Distribution</h3>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+    <div class="class-dist-wrap">
+        <h3 class="class-dist-title">Top-10 Class Distribution</h3>
+        <div class="class-dist-list">
             {% for cd in last_query.class_distribution %}
-            <span class="meta-badge" style="font-size:0.85rem;">
+            <span class="meta-badge">
                 {{ cd.class_name }}: {{ cd.count }} ({{ cd.pct }}%)
             </span>
             {% endfor %}
@@ -101,8 +101,8 @@
     {% endif %}
 </section>
 {% else %}
-<section class="metrics-section" style="border:1px dashed var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem;text-align:center;">
-    <p style="color:var(--text-muted);margin:0;">
+<section class="metrics-section metrics-empty-query">
+    <p class="text-muted">
         &#x1F50D; <strong>No query performed yet.</strong>
         <a href="{% url 'search_page' %}">Upload an image</a> to see per-query metrics here.
     </p>
@@ -226,7 +226,7 @@
                 {% elif key == "googlenet" %}GoogLeNet / Inception v1 (1024-d)
                 {% endif %}
             </h3>
-            <div class="info-dim" style="margin-bottom:0.5rem;">Last updated: {{ plot.updated_at }}</div>
+            <div class="info-dim">Last updated: {{ plot.updated_at }}</div>
             <img src="{% static plot.url %}?v={{ plot.version }}" alt="t-SNE for {{ key }}" class="tsne-image">
         </div>
         {% endfor %}

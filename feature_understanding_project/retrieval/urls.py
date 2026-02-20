@@ -10,7 +10,12 @@ urlpatterns = [
     path("", views.landing, name="landing"),
     path("search/", views.search_page, name="search_page"),
     path("search/go/", views.search, name="search"),
+    path("compare/", views.compare_page, name="compare_page"),
+    path("compare/go/", views.compare, name="compare"),
     path("metrics/", views.metrics, name="metrics"),
+    path("benchmark/", views.benchmark, name="benchmark"),
+    path("robustness/", views.robustness, name="robustness"),
+    path("analysis/", views.analysis, name="analysis"),
     path("history/", views.history, name="history"),
     path("result/<int:search_id>/", views.result_detail, name="result_detail"),
 

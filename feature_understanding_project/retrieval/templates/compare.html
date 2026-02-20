@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compare Models — Visual Embedding Explorer{% endblock %}
+{% block nav_compare %}active{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="hero-badge">Multi-Model Comparison</div>
+    <h1 class="hero-title">Side-by-Side Retrieval</h1>
+    <p class="hero-subtitle">
+        Upload a single query image and compare retrieval results across
+        ResNet-101, ZFNet, and GoogLeNet simultaneously
+    </p>
+</div>
+
+{% if error %}
+<div class="alert alert-error">
+    <span><strong>Error:</strong> {{ error }}</span>
+    <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+</div>
+{% endif %}
+
+<section class="upload-section">
+    <h2 class="section-title">Upload Query Image</h2>
+    <p class="section-subtitle">The image will be processed through all three CNN models for comparison</p>
+
+    <form method="POST" action="{% url 'compare' %}" enctype="multipart/form-data" class="upload-form" id="compare-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="query_image" class="form-label">Query Image</label>
+            <div class="file-upload-area" id="drop-area">
+                <input type="file" name="query_image" id="query_image"
+                       accept="image/*" required class="file-input">
+                <div class="upload-placeholder" id="upload-placeholder">
+                    <div class="upload-icon">📁</div>
+                    <p>Drag & drop or <span class="upload-link">browse</span></p>
+                    <small>JPG, PNG, BMP — max 10 MB</small>
+                </div>
+                <div class="preview-container is-hidden" id="preview-container">
+                    <img id="preview-image" class="preview-image" alt="Preview">
+                    <button type="button" class="remove-btn" id="remove-btn">&times;</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-grid" style="margin-bottom:1.5rem">
+            <div class="info-card">
+                <h3>ResNet-101</h3>
+                <div class="info-dim">2048-d</div>
+                <p>Deep residual features</p>
+            </div>
+            <div class="info-card">
+                <h3>ZFNet</h3>
+                <div class="info-dim">4096-d</div>
+                <p>FC-7 deconvolution features</p>
+            </div>
+            <div class="info-card">
+                <h3>GoogLeNet</h3>
+                <div class="info-dim">1024-d</div>
+                <p>Multi-scale inception features</p>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
+            <span class="btn-text">⚡ Compare All Models</span>
+            <span class="btn-loading is-hidden">⏳ Running 3 models — this may take a moment…</span>
+        </button>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const fileInput = document.getElementById('query_image');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const placeholder = document.getElementById('upload-placeholder');
+    const removeBtn = document.getElementById('remove-btn');
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                previewImage.src = ev.target.result;
+                previewContainer.classList.remove('is-hidden');
+                placeholder.classList.add('is-hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        previewContainer.classList.add('is-hidden');
+        placeholder.classList.remove('is-hidden');
+    });
+
+    const dropArea = document.getElementById('drop-area');
+    ['dragenter','dragover'].forEach(e => dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.add('drag-over'); }));
+    ['dragleave','drop'].forEach(e => dropArea.addEventListener(e, ev => { ev.preventDefault(); dropArea.classList.remove('drag-over'); }));
+    dropArea.addEventListener('drop', e => { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); });
+
+    document.getElementById('compare-form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        btn.querySelector('.btn-text').classList.add('is-hidden');
+        btn.querySelector('.btn-loading').classList.remove('is-hidden');
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

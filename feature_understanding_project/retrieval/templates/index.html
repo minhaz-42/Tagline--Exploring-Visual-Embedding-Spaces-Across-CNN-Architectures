@@ -4,19 +4,15 @@
 {% block title %}Search — Visual Embedding Explorer{% endblock %}
 {% block nav_search %}active{% endblock %}
 
-{% block hero %}
-<header class="hero">
-    <div class="container hero-content">
-        <div class="hero-badge">CNN Feature Retrieval</div>
-        <h1 class="hero-title">Visual Embedding Explorer</h1>
-        <p class="hero-subtitle">
-            Upload a query image and retrieve the 10 most similar images by cosine similarity
-        </p>
-    </div>
-</header>
-{% endblock %}
-
 {% block content %}
+<div class="page-hero">
+    <div class="hero-badge">CNN Feature Retrieval</div>
+    <h1 class="hero-title">Visual Embedding Explorer</h1>
+    <p class="hero-subtitle">
+        Upload a query image and retrieve the 10 most similar images by cosine similarity
+    </p>
+</div>
+
 {% if error %}
 <div class="alert alert-error">
     <span><strong>Error:</strong> {{ error }}</span>
@@ -32,7 +28,6 @@
         {% csrf_token %}
 
         <div class="form-grid">
-            <!-- Image Upload -->
             <div class="form-group">
                 <label for="query_image" class="form-label">Upload Image</label>
                 <div class="file-upload-area" id="drop-area">
@@ -43,14 +38,13 @@
                         <p>Drag & drop or <span class="upload-link">browse</span></p>
                         <small>JPG, PNG, BMP — max 10 MB</small>
                     </div>
-                    <div class="preview-container" id="preview-container" style="display:none;">
+                    <div class="preview-container is-hidden" id="preview-container">
                         <img id="preview-image" class="preview-image" alt="Preview">
                         <button type="button" class="remove-btn" id="remove-btn">&times;</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Model Selection -->
             <div class="form-group">
                 <label class="form-label">Select CNN Model</label>
                 <div class="model-cards">
@@ -76,12 +70,11 @@
 
         <button type="submit" class="btn btn-primary btn-full btn-lg" id="submit-btn">
             <span class="btn-text">🔍 Search Similar Images</span>
-            <span class="btn-loading" style="display:none;">⏳ Processing…</span>
+            <span class="btn-loading is-hidden">⏳ Processing…</span>
         </button>
     </form>
 </section>
 
-<!-- Info Cards -->
 <section class="info-section">
     <h2 class="section-title">About the Models</h2>
     <div class="info-grid">
@@ -118,8 +111,8 @@
             const reader = new FileReader();
             reader.onload = ev => {
                 previewImage.src = ev.target.result;
-                previewContainer.style.display = 'block';
-                placeholder.style.display = 'none';
+                previewContainer.classList.remove('is-hidden');
+                placeholder.classList.add('is-hidden');
             };
             reader.readAsDataURL(file);
         }
@@ -127,8 +120,8 @@
 
     removeBtn.addEventListener('click', () => {
         fileInput.value = '';
-        previewContainer.style.display = 'none';
-        placeholder.style.display = 'flex';
+        previewContainer.classList.add('is-hidden');
+        placeholder.classList.remove('is-hidden');
     });
 
     const dropArea = document.getElementById('drop-area');
@@ -138,8 +131,8 @@
 
     document.getElementById('upload-form').addEventListener('submit', function() {
         const btn = document.getElementById('submit-btn');
-        btn.querySelector('.btn-text').style.display = 'none';
-        btn.querySelector('.btn-loading').style.display = 'inline';
+        btn.querySelector('.btn-text').classList.add('is-hidden');
+        btn.querySelector('.btn-loading').classList.remove('is-hidden');
         btn.disabled = true;
     });
 </script>

@@ -2,10 +2,10 @@
 {% load static %}
 
 {% block title %}Tagline — Exploring Visual Embedding Spaces Across CNN Architectures{% endblock %}
+{% block body_class %}landing-page{% endblock %}
 
-{% block main_class %}landing-page{% endblock %}
-
-{% block hero %}
+{% block layout %}
+{# Landing page uses full-width layout without sidebar #}
 <section class="landing-hero">
     <div class="landing-container">
         <div class="landing-text">
@@ -16,68 +16,62 @@
                 Exploring <span class="highlight">Visual Embedding</span> Spaces Across CNN Architectures
             </h1>
             <p class="landing-desc">
-                A comparative analysis of feature representations from ResNet-101, ZFNet, and GoogLeNet. 
-                Upload any image and retrieve the most visually similar results using cosine similarity 
+                A comparative analysis of feature representations from ResNet-101, ZFNet, and GoogLeNet.
+                Upload any image and retrieve the most visually similar results using cosine similarity
                 across high-dimensional embedding spaces.
             </p>
             <div class="landing-actions">
                 <a href="{% url 'search_page' %}" class="btn btn-primary btn-lg">
-                    <span class="btn-icon">🔍</span> Start Searching
+                    🔍 Start Searching
                 </a>
                 <a href="{% url 'metrics' %}" class="btn btn-secondary btn-lg">
-                    <span class="btn-icon">📊</span> View Metrics
+                    📊 View Metrics
                 </a>
             </div>
         </div>
         <div class="landing-visual">
             <div class="visual-card-stack">
-                <!-- ResNet Card -->
                 <div class="visual-card">
                     <div class="vc-header">
-                        <div class="vc-dot" style="background:#6366f1"></div>
+                        <div class="vc-dot vc-dot-resnet"></div>
                         <span class="vc-label">ResNet-101 · 2048-d</span>
                     </div>
                     <div class="vc-bars">
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:99%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:97%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:92%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:88%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-resnet vc-w-99"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-resnet vc-w-97"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-resnet vc-w-92"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-resnet vc-w-88"></div></div>
                     </div>
                 </div>
-                <!-- ZFNet Card -->
                 <div class="visual-card">
                     <div class="vc-header">
-                        <div class="vc-dot" style="background:#f59e0b"></div>
+                        <div class="vc-dot vc-dot-zfnet"></div>
                         <span class="vc-label">ZFNet · 4096-d</span>
                     </div>
                     <div class="vc-bars">
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:95%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:86%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:78%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:84%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-zfnet vc-w-95"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-zfnet vc-w-86"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-zfnet vc-w-78"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-zfnet vc-w-84"></div></div>
                     </div>
                 </div>
-                <!-- GoogLeNet Card -->
                 <div class="visual-card">
                     <div class="vc-header">
-                        <div class="vc-dot" style="background:#10b981"></div>
+                        <div class="vc-dot vc-dot-googlenet"></div>
                         <span class="vc-label">GoogLeNet · 1024-d</span>
                     </div>
                     <div class="vc-bars">
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:98%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:93%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:87%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
-                        <div class="vc-bar"><div class="vc-bar-fill" style="width:90%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-googlenet vc-w-98"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-googlenet vc-w-93"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-googlenet vc-w-87"></div></div>
+                        <div class="vc-bar"><div class="vc-bar-fill vc-fill-googlenet vc-w-90"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
-{% endblock %}
 
-{% block content %}
-<!-- Features Section -->
 <section class="features-section">
     <div class="features-header">
         <h2>How It Works</h2>
@@ -107,8 +101,7 @@
     </div>
 </section>
 
-<!-- Models Overview -->
-<section class="container" style="padding:60px 24px">
+<section class="landing-models-section">
     <div class="features-header">
         <h2>CNN Architectures Compared</h2>
         <p>Pre-trained on ImageNet, evaluated on Caltech-101</p>
@@ -131,4 +124,19 @@
         </div>
     </div>
 </section>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-brand">
+            <strong>Tagline</strong> — Exploring Visual Embedding Spaces Across CNN Architectures
+        </div>
+        <div class="footer-meta">
+            <span>Caltech-101</span>
+            <span class="footer-dot">·</span>
+            <span>8 Classes</span>
+            <span class="footer-dot">·</span>
+            <span>PyTorch + Django</span>
+        </div>
+    </div>
+</footer>
 {% endblock %}

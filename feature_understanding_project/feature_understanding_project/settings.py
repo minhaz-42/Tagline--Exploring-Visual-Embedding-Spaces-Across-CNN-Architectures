@@ -96,9 +96,10 @@ DATASET_DIR = BASE_DIR / "dataset"
 EMBEDDINGS_DIR = BASE_DIR / "embeddings"
 TSNE_PLOTS_DIR = BASE_DIR / "retrieval" / "static" / "tsne_plots"
 UPLOADS_DIR = BASE_DIR / "retrieval" / "static" / "uploads"
+PLOTS_DIR = BASE_DIR / "retrieval" / "static" / "plots"
 
 # Ensure directories exist
-for _dir in [EMBEDDINGS_DIR, TSNE_PLOTS_DIR, UPLOADS_DIR, MEDIA_ROOT]:
+for _dir in [EMBEDDINGS_DIR, TSNE_PLOTS_DIR, UPLOADS_DIR, MEDIA_ROOT, PLOTS_DIR]:
     _dir.mkdir(parents=True, exist_ok=True)
 
 # ──────────────────────────────────────────────

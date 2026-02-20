@@ -5,12 +5,17 @@ Django views for the visual embedding retrieval system.
 
 Routes
 ~~~~~~
-* ``/``              – **landing**   : project landing page
-* ``/search/``       – **search_page** : upload form (select model + image)
-* ``/search/go/``    – **search**    : perform retrieval and show results
-* ``/metrics/``      – **metrics**   : evaluation table + t-SNE plots
-* ``/dashboard/``    – **dashboard** : user dashboard (login required)
-* ``/history/``      – **history**   : search history (login required)
+* ``/``              – **landing**        : project landing page
+* ``/search/``       – **search_page**    : upload form (select model + image)
+* ``/search/go/``    – **search**         : perform retrieval and show results
+* ``/compare/``      – **compare_page**   : compare form (all 3 models)
+* ``/compare/go/``   – **compare**        : side-by-side retrieval results
+* ``/metrics/``      – **metrics**        : evaluation table + t-SNE plots
+* ``/benchmark/``    – **benchmark**      : statistical benchmark results
+* ``/robustness/``   – **robustness**     : robustness testing results
+* ``/analysis/``     – **analysis**       : feature space analysis
+* ``/dashboard/``    – **dashboard**      : user dashboard (login required)
+* ``/history/``      – **history**        : search history
 * ``/login/``        – **user_login**
 * ``/register/``     – **user_register**
 * ``/logout/``       – **user_logout**
@@ -141,6 +146,34 @@ def _compute_query_metrics(results, class_names):
         "confidence_level": confidence,
         "total_results": len(results),
     }
+
+
+def _load_json(filename):
+    """Load a JSON file from the embeddings directory, return {} on failure."""
+    path = settings.EMBEDDINGS_DIR / filename
+    if path.exists():
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return {}
+
+
+def _list_plots(prefix=""):
+    """List all .png plots in the plots directory with optional prefix filter."""
+    plots_dir = getattr(settings, "PLOTS_DIR", None)
+    if not plots_dir or not Path(plots_dir).exists():
+        return {}
+    plots = {}
+    for p in Path(plots_dir).glob(f"{prefix}*.png"):
+        key = p.stem
+        mtime = p.stat().st_mtime
+        plots[key] = {
+            "url": f"plots/{p.name}",
+            "version": str(int(mtime)),
+        }
+    return plots
 
 
 # ══════════════════════════════════════════════
@@ -346,6 +379,102 @@ def _cleanup(path):
 
 
 # ══════════════════════════════════════════════
+# Compare (all 3 models side-by-side)
+# ══════════════════════════════════════════════
+
+def compare_page(request):
+    """Render the multi-model comparison upload form."""
+    return render(request, "compare.html", {"models_available": MODELS_AVAILABLE})
+
+
+def compare(request):
+    """
+    Run the same query image through all 3 models simultaneously and
+    present side-by-side retrieval results.
+    """
+    if request.method != "POST":
+        return redirect("compare_page")
+
+    uploaded_file = request.FILES.get("query_image")
+    if not uploaded_file:
+        return render(request, "compare.html", {
+            "error": "Please upload an image.",
+            "models_available": MODELS_AVAILABLE,
+        })
+
+    # Save uploaded image
+    ext = Path(uploaded_file.name).suffix
+    filename = f"{uuid.uuid4().hex}{ext}"
+    save_dir = settings.UPLOADS_DIR
+    save_dir.mkdir(parents=True, exist_ok=True)
+    save_path = save_dir / filename
+
+    with open(save_path, "wb+") as dest:
+        for chunk in uploaded_file.chunks():
+            dest.write(chunk)
+
+    try:
+        from .feature_pipeline.feature_extractor import get_model, extract_single_embedding
+        from .feature_pipeline.nearest_neighbors import (
+            load_embeddings, build_index, query_index,
+            compute_cosine_similarities,
+        )
+    except Exception as exc:
+        _cleanup(save_path)
+        return render(request, "compare.html", {
+            "error": f"ML dependencies missing: {exc}",
+            "models_available": MODELS_AVAILABLE,
+        })
+
+    class_names = settings.SELECTED_CLASSES
+    embeddings_dir = settings.EMBEDDINGS_DIR
+    model_configs = settings.MODEL_CONFIGS
+    all_model_results = {}
+
+    for model_key in ("resnet", "zfnet", "googlenet"):
+        cfg = model_configs[model_key]
+        emb_file = embeddings_dir / cfg["embeddings_file"]
+        if not emb_file.exists():
+            continue
+
+        model = get_model(model_key)
+        query_embedding = extract_single_embedding(model, str(save_path))
+        db_embeddings, db_labels, db_paths = load_embeddings(str(embeddings_dir), model_key)
+        nn_model = build_index(db_embeddings)
+
+        results = query_index(
+            nn_model=nn_model,
+            query_embedding=query_embedding,
+            embeddings=db_embeddings,
+            labels=db_labels,
+            paths=db_paths,
+            top_k=10,
+        )
+
+        for r in results:
+            r["class_name"] = class_names[r["label"]]
+            r["image_path"] = r["path"]
+
+        query_metrics = _compute_query_metrics(results, class_names)
+        all_sims = compute_cosine_similarities(query_embedding, db_embeddings)
+        query_metrics["db_mean_similarity"] = round(float(np.mean(all_sims)), 4)
+
+        all_model_results[model_key] = {
+            "model_name": cfg["name"],
+            "embedding_dim": cfg["embedding_dim"],
+            "results": results,
+            "query_metrics": query_metrics,
+        }
+
+    context = {
+        "query_image_url": f"uploads/{filename}",
+        "all_model_results": all_model_results,
+        "class_names": class_names,
+    }
+    return render(request, "compare_results.html", context)
+
+
+# ══════════════════════════════════════════════
 # Metrics
 # ══════════════════════════════════════════════
 
@@ -379,6 +508,67 @@ def metrics(request):
         "last_query": last_query,
     }
     return render(request, "metrics.html", context)
+
+
+# ══════════════════════════════════════════════
+# Benchmark (statistical)
+# ══════════════════════════════════════════════
+
+def benchmark(request):
+    """Display pre-computed statistical benchmark results."""
+    data = _load_json("benchmark_results.json")
+    plots = _list_plots("performance")
+    plots.update(_list_plots("dim_vs"))
+
+    context = {
+        "benchmark_data": data,
+        "model_results": data.get("model_results", {}),
+        "model_keys": data.get("model_keys", []),
+        "t_test_results": data.get("t_test_results", {}),
+        "has_data": bool(data),
+        "plots": plots,
+    }
+    return render(request, "benchmark.html", context)
+
+
+# ══════════════════════════════════════════════
+# Robustness
+# ══════════════════════════════════════════════
+
+def robustness(request):
+    """Display pre-computed robustness testing results."""
+    data = _load_json("robustness_results.json")
+    plots = _list_plots("robustness")
+
+    context = {
+        "robustness_data": data,
+        "model_keys": list(data.keys()) if data else [],
+        "has_data": bool(data),
+        "plots": plots,
+    }
+    return render(request, "robustness.html", context)
+
+
+# ══════════════════════════════════════════════
+# Feature Analysis
+# ══════════════════════════════════════════════
+
+def analysis(request):
+    """Display pre-computed feature space analysis results."""
+    data = _load_json("analysis_results.json")
+    plots = {}
+    plots.update(_list_plots("confusion"))
+    plots.update(_list_plots("distances"))
+    plots.update(_list_plots("runtime"))
+    plots.update(_list_plots("tsne"))
+
+    context = {
+        "analysis_data": data,
+        "model_keys": list(data.keys()) if data else [],
+        "has_data": bool(data),
+        "plots": plots,
+    }
+    return render(request, "analysis.html", context)
 
 
 # ══════════════════════════════════════════════

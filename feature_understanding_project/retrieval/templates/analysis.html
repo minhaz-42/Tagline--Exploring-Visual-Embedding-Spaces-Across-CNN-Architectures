@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Feature Analysis — Visual Embedding Explorer{% endblock %}
+{% block nav_analysis %}active{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1 class="page-title">Feature Space Analysis</h1>
+    <p class="page-subtitle">
+        In-depth analysis of embedding quality: intra/inter-class distances, Fisher ratios,
+        confusion matrices, normalization effects, and runtime benchmarks.
+    </p>
+</header>
+
+{% if has_data %}
+
+<!-- Per-Model Analysis Cards -->
+{% for model_key in model_keys %}
+{% with md=analysis_data %}
+<section class="metrics-section">
+    <h2 class="section-title">{{ model_key|title }} — Embedding Analysis</h2>
+
+    {% for mk, model_data in md.items %}
+    {% if mk == model_key %}
+
+    <!-- Class Distances -->
+    {% if model_data.class_distances %}
+    <details open>
+        <summary class="details-summary">Intra/Inter-Class Distances & Fisher Ratio</summary>
+        <div class="table-wrapper">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Intra-Class Dist</th>
+                        <th>Inter-Class Dist</th>
+                        <th>Fisher Ratio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cls_name, cdist in model_data.class_distances.items %}
+                    <tr>
+                        <td><strong>{{ cls_name }}</strong></td>
+                        <td>{{ cdist.intra_class_distance|floatformat:4 }}</td>
+                        <td>{{ cdist.inter_class_distance|floatformat:4 }}</td>
+                        <td>
+                            <div class="metric-bar">
+                                <span class="metric-value">{{ cdist.fisher_ratio|floatformat:3 }}</span>
+                                <div class="metric-bar-track">
+                                    <div class="metric-bar-fill" style="width:{% widthratio cdist.fisher_ratio 10 100 %}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {% endif %}
+
+    <!-- Embedding Statistics -->
+    {% if model_data.embedding_stats %}
+    <details>
+        <summary class="details-summary">Embedding Statistics</summary>
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Dimensions</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.embedding_stats.dimensions }}-d</div>
+            </div>
+            <div class="info-card">
+                <h3>Samples</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.embedding_stats.num_samples }}</div>
+            </div>
+            <div class="info-card">
+                <h3>Mean Norm</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.embedding_stats.mean_norm|floatformat:4 }}</div>
+            </div>
+            <div class="info-card">
+                <h3>Sparsity</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.embedding_stats.sparsity|floatformat:4 }}</div>
+            </div>
+        </div>
+    </details>
+    {% endif %}
+
+    <!-- Normalization Comparison -->
+    {% if model_data.normalization %}
+    <details>
+        <summary class="details-summary">Normalization Comparison</summary>
+        <div class="table-wrapper">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Accuracy</th>
+                        <th>mAP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for method, ndata in model_data.normalization.items %}
+                    <tr>
+                        <td><strong>{{ method }}</strong></td>
+                        <td>{{ ndata.accuracy|floatformat:4 }}</td>
+                        <td>{{ ndata.mAP|floatformat:4 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {% endif %}
+
+    <!-- Similarity Metric Comparison -->
+    {% if model_data.similarity_metrics %}
+    <details>
+        <summary class="details-summary">Similarity Metric Comparison</summary>
+        <div class="table-wrapper">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Accuracy</th>
+                        <th>mAP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for smetric, sdata in model_data.similarity_metrics.items %}
+                    <tr>
+                        <td><strong>{{ smetric }}</strong></td>
+                        <td>{{ sdata.accuracy|floatformat:4 }}</td>
+                        <td>{{ sdata.mAP|floatformat:4 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {% endif %}
+
+    <!-- Runtime -->
+    {% if model_data.runtime %}
+    <details>
+        <summary class="details-summary">Runtime Benchmark</summary>
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Extraction Time</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.runtime.extraction_time_per_image|floatformat:4 }}s / image</div>
+            </div>
+            <div class="info-card">
+                <h3>Search Time</h3>
+                <div class="info-dim info-dim-lg">{{ model_data.runtime.search_time_per_query|floatformat:6 }}s / query</div>
+            </div>
+        </div>
+    </details>
+    {% endif %}
+
+    {% endif %}
+    {% endfor %}
+</section>
+{% endwith %}
+{% endfor %}
+
+<!-- Plots -->
+{% if plots %}
+<section class="metrics-section">
+    <h2 class="section-title">Visualizations</h2>
+    <div class="info-grid">
+        {% for name, plot in plots.items %}
+        <div class="plot-container">
+            <h3>{{ name|title }}</h3>
+            <img src="{% static 'plots/' %}{{ name }}.png?v={{ plot.version }}"
+                 alt="{{ name }}" class="plot-image" loading="lazy">
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% else %}
+
+<!-- No Data -->
+<div class="empty-state">
+    <div class="empty-state-icon">🔬</div>
+    <h3>Feature Analysis Not Yet Generated</h3>
+    <p>
+        Run the full benchmark pipeline to generate analysis results:
+    </p>
+    <pre class="code-block">python run_full_benchmark.py</pre>
+    <p class="text-muted" style="margin-top:1rem">
+        This computes intra/inter-class distances, Fisher discriminant ratios,
+        confusion matrices, normalization and similarity metric comparisons, and runtime benchmarks.
+    </p>
+</div>
+
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'robustness' %}" class="btn btn-secondary">&larr; Robustness</a>
+    <a href="{% url 'benchmark' %}" class="btn btn-outline">📊 Benchmark</a>
+    <a href="{% url 'metrics' %}" class="btn btn-outline">📈 Metrics</a>
+</div>
+{% endblock %}
